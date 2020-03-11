@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div style="display: flex; flex-direction:column; justify-content: center; padding: 40px; height: 100vh;">
+    <div style="display: flex; flex-direction:row; justify-content: space-evenly; padding: 30px;">
+        <form action="{{url_for('panel.goto_manualscaling')}}" method='get'>
+            <button type="submit" class="btn btn-lg btn-primary">MANUAL SCALING</button>
+        </form>
+        <form action="{{url_for('panel.goto_autoscaling')}}" method='get'>
+            <button type="submit" class="btn btn-lg btn-primary">AUTO SCALING</button>
+        </form>
+    </div>
+    <div style="display: flex; flex-direction:row; justify-content: space-evenly; padding: 30px;">
+        <form action="{{url_for('panel.list_workers')}}" method='get'>
+            <button type="submit" class="btn btn-lg btn-primary">WORKERS LIST</button>
+        </form>
+        <form action="{{url_for('panel.delete_data')}}" method='post'>
+            <button type="submit" class="btn btn-lg btn-primary">DELETE ALL DATA</button>
+        </form>
+    </div>
+    <div id="message">
+        {% for message in get_flashed_messages() %}
+        <div class="alert alert-dismissible alert-success">
+            <button type="button" class='close' data-dismiss="alert">&times;</button>
+            <p class="mb-0">{{ message }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

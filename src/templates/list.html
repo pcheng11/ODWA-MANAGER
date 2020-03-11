@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="padding:20px; display:flex; justify-content:center; flex-direction:column">
+    <div style="display:flex; flex-direction:row; justify-content: space-between;" >
+    <h2>Workers List</h2>
+    <form action="{{url_for('panel.index')}}" method='get'>
+        <button type="submit" class="btn btn-primary">PANEL</button>
+    </form>
+    </div>
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th scope="col">ID</th>
+                <th scope="col">PUBLIC IP</th>
+                <th scope="col">Type</th>
+                <th scope="col">Availability Zone</th>
+
+                <th scope="col">Status</th>
+            </tr>
+        </thead>
+        {% for instance in instances %}
+        <tr>
+            <td>{{ instance.id }}</td>
+            <td>{{ instance.public_ip_address }}</td>
+            <td>{{ instance.instance_type }}</td>
+            <td>{{ instance.placement['AvailabilityZone']}}</td>
+            <td>{{ instance.state['Name'] }}</td>
+            <td>
+                {% if instance.state['Name'] == 'pending' or instance.state['Name'] == 'shutting-down' or instance.state['Name'] == 'terminated'%}
+                    <button type="submit" class="btn btn-sm btn-primary disabled">Detail</button>
+                {% else %}
+                <form action="{{url_for('worker.worker_view',id=instance.id)}}" method='get'>
+                    <button type="submit" class="btn btn-sm btn-info">Detail</button>
+                </form>
+                {% endif %}
+                
+            </td>
+            <td>
+                {% if instance.state['Name'] == 'terminated' or instance.state['Name'] == 'shutting-down' %}
+                    <button type="submit" class="btn btn-sm btn-primary disabled">Delete</button>
+                {% else %}
+                <form action="{{url_for('worker.delete_worker',id=instance.id)}}" method='post'>
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+
+{% endblock %}
