@@ -24,6 +24,8 @@ runcmd:
         UserData=startup_script,
         KeyName='odwa',
         SecurityGroupIds=config.SECURITY_GROUP_IDS,
+        TagSpecifications=[{'ResourceType': 'instance',
+                            'Tags': [{'Key': 'Name', 'Value': 'worker'}]}],
         Monitoring={'Enabled': True}
     )[0]
 
@@ -70,5 +72,6 @@ def random_destroy_worker():
 
 def get_running_instances():
     instances = ec2.instances.filter(
-        Filters=[{'Name': 'instance-state-name', 'Values': ['running']}])
+        Filters=[{'Name': 'instance-state-name', 'Values': ['running']},
+                 {'Name': 'tag:Name', 'Values': ['worker']}])
     return instances, len(set(instances))

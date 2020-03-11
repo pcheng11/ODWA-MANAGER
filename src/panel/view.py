@@ -22,7 +22,7 @@ def index():
 
 @panel_blueprint.route('/workers')
 def list_workers():
-    instances = ec2.instances.all()
+    instances = ec2.instances.filter(Filters=[{'Name': 'tag:Name', 'Values': ['worker']}])
     return render_template('list.html', instances=instances)
 
 
