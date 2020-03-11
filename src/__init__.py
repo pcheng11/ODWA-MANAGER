@@ -1,7 +1,7 @@
 __author__ = 'victor cheng'
 
 import boto3
-from flask import Flask, render_template, jsonify, session
+from flask import Flask
 from config import config
 from celery import Celery
 from flask_sqlalchemy import SQLAlchemy
