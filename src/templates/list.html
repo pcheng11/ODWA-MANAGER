@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<div style="padding:20px; display:flex; justify-content:center; flex-direction:column">
+<div style="padding:20px; display:flex; flex-direction:column; ">
     <div style="display:flex; flex-direction:row; justify-content: space-between;" >
     <h2>Workers</h2>
         <h3 class="text-success">Worker Pool Size: {{worker_pool_size}} </h3>
@@ -8,29 +8,27 @@
             <button type="submit" class="btn btn-primary">PANEL</button>
         </form>
     </div>
-    <ul class="nav nav-tabs">
-        <li class="nav-item">
-            <a class="nav-link active" id="listtab" data-toggle="tab" href="#list" onclick="return showList()">List</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" id="charttab" data-toggle="tab" href="#chart" onclick="return showChart()">Chart</a>
-        </li>
-    </ul>
-    <div id="myTabContent" class="tab-content">
-        <div class="tab-pane fade active show" id="list">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th scope="col">ID</th>
-                        <th scope="col">PUBLIC IP</th>
-                        <th scope="col">Type</th>
-                        <th scope="col">Availability Zone</th>
-
-                        <th scope="col">Status</th>
-                        <th scope="col">In Service</th>
-                    </tr>
-                </thead>
-                {% for instance in instances %}
+    <div style="margin:25px">
+        <div class="card border-primary">
+            <div class="card-header">WORKER NUMBER IN LAST 30 MINUTES</div>
+            <div class="card-body" style="display:flex; justify-content:center;">
+                <canvas id="workerchart" width="600" height="300"></canvas>
+            </div>
+        </div>
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">PUBLIC IP</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Availability Zone</th>
+        
+                    <th scope="col">Status</th>
+                    <th scope="col">In Service</th>
+                </tr>
+            </thead>
+            {% for instance in instances %}
+            {% if instance['state'] != 'terminated' %}
                 {% if instance['inservice']== 'Yes' %}
                 <tr class="table-success">
                     {% else %}
@@ -43,17 +41,17 @@
                     <td>{{ instance['state'] }}</td>
                     <td>{{ instance['inservice'] }}</td>
                     <td>
-                        {% if instance.state['Name'] == 'pending' or instance.state['Name'] == 'shutting-down' or instance.state['Name'] == 'terminated'%}
+                        {% if instance['state'] == 'pending' or instance['state']== 'shutting-down'%}
                         <button type="submit" class="btn btn-sm btn-primary disabled">Detail</button>
                         {% else %}
                         <form action="{{url_for('worker.worker_view',id=instance.id)}}" method='get'>
                             <button type="submit" class="btn btn-sm btn-info">Detail</button>
                         </form>
                         {% endif %}
-
+            
                     </td>
                     <td>
-                        {% if instance.state['Name'] == 'terminated' or instance.state['Name'] == 'shutting-down' %}
+                        {% if instance['state'] == 'shutting-down' %}
                         <button type="submit" class="btn btn-sm btn-primary disabled">Delete</button>
                         {% else %}
                         <form action="{{url_for('worker.delete_worker',id=instance.id)}}" method='post'>
@@ -62,38 +60,21 @@
                         {% endif %}
                     </td>
                 </tr>
-                {% endfor %}
-            </table>
-        </div>
-        <div class="tab-pane fade" id="chart">
-            <div class="card border-primary">
-                <div class="card-header">WORKER NUMBER IN LAST 30 MINUTES</div>
-                <div class="card-body" style="display:flex; justify-content:center;">
-                    <canvas id="workerchart" width="1000" height="500"></canvas>
-                </div>
-            </div>
-        </div>
+                {% endif %}
+            {% endfor %}
+        </table>
     </div>
 
 </div>
 
 <script>
     
-    function showList() {
-        document.getElementById("list").className = "tab-pane fade active show";
-        document.getElementById("listtab").className = "nav-link active";
-        document.getElementById("charttab").className = "nav-link";
-    }
-    function showChart() {
-        document.getElementById("chart").className = "tab-pane fade active show";
-        document.getElementById("charttab").className = "nav-link active";
-        document.getElementById("listtab").className = "nav-link";
-    }
+    
 
      var WorkerData = {
             labels: [
                 {% for item in workerLabels %}
-        "{{ item }}",
+                    "{{ item }}",
             {% endfor %}
         ],
 
@@ -130,7 +111,7 @@
         // draw bar chart
         var LineChartDemo = new Chart(WorkerChart).Line(WorkerData, {
             scaleOverride: true,
-            scaleSteps: 1,
+            scaleSteps: max/10,
             scaleStepWidth: max,
             scaleStartValue: 0,
             scaleShowVerticalLines: true,

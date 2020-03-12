@@ -64,7 +64,7 @@ def record_serving_instances():
             {
                 'MetricName': 'numWorkers30',
                 'Timestamp': datetime.now(),
-                'Value': 10,
+                'Value': num_workers,
                 'Dimensions': [
                     {
                         'Name': 'InstanceId',
@@ -169,15 +169,14 @@ def get_num_workers_30():
         EndTime=datetime.utcnow() - timedelta(seconds=0),
         MetricName='numWorkers30',
         Namespace='AWS/EC2',
-        Statistics=['Sum'],
+        Statistics=['Average'],
         Dimensions=[{'Name': 'InstanceId', 'Value': 'i-078f69c8c9c0097d6'}]
     )
     workers_stats = []
     for point in workers['Datapoints']:
         hour = point['Timestamp'].hour
         minute = point['Timestamp'].minute
-        workers_stats.append(["%d:%02d" % (hour, minute), point['Sum']])
-    print(workers_stats)
+        workers_stats.append(["%d:%02d" % (hour, minute), point['Average']])
     workers_stats = sorted(workers_stats, key=itemgetter(0))
     labels = [
         item[0] for item in workers_stats
