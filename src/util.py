@@ -19,7 +19,7 @@ runcmd:
  - sudo pip3 install -r requirements.txt
  - sudo pip3 install redis
  - sudo pip3 install celery
- - uwsgi uwsgi.ini --plugin python3 --uid ubuntu --binary-path /home/ubuntu/.local/bin/uwsgi --logto mylog.log & celery worker -A run.celery --loglevel=info --beat
+ - celery worker -A run.celery --loglevel=info --beat & uwsgi uwsgi.ini --plugin python3 --uid ubuntu --binary-path /home/ubuntu/.local/bin/uwsgi --logto mylog.log
 """
     instance = ec2.create_instances(
         ImageId=config.AMI,
@@ -63,14 +63,19 @@ def register_instance_to_elb(id):
 
 @periodic_task(run_every=timedelta(seconds=10))
 def record_serving_instances():
-    _, num_workers = get_serving_instances()
+    response = health_check()
+    inservice_instances_id = set()
+    for instance in response:
+        if instance['TargetHealth']['State'] == 'healthy':
+            inservice_instances_id.add(instance['Target']['Id'])
+
     response = cw.put_metric_data(
         Namespace='AWS/EC2',
         MetricData=[
             {
                 'MetricName': 'numWorkers30',
                 'Timestamp': datetime.now(),
-                'Value': num_workers,
+                'Value': len(inservice_instances_id),
                 'Dimensions': [
                     {
                         'Name': 'InstanceId',
@@ -82,7 +87,7 @@ def record_serving_instances():
             },
         ]
     )
-    print(response)
+    print('HEALTHY INSTANCES: ' + str(len(inservice_instances_id)))
 
 def health_check():
     response = elb.describe_target_health(TargetGroupArn=config.TARGET_GROUP_ARN)
