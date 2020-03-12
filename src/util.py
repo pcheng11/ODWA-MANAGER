@@ -1,8 +1,12 @@
-from src import ec2, elb, celery, ec2_client
+from src import ec2, elb, celery, ec2_client, s3, cw
 from operator import itemgetter
 from config import config
 from time import sleep
+import pymysql
+from celery.task import periodic_task
 import random
+from datetime import timedelta, datetime
+import celery
 
 @celery.task
 def celery_create_worker():
@@ -50,12 +54,48 @@ runcmd:
     )
     print(ELBresponse)
 
+
+@periodic_task(run_every=timedelta(seconds=10))
+def record_serving_instances():
+    _, num_workers = get_serving_instances()
+    response = cw.put_metric_data(
+        Namespace='AWS/EC2',
+        MetricData=[
+            {
+                'MetricName': 'numWorkers30',
+                'Timestamp': datetime.now(),
+                'Value': 10,
+                'Dimensions': [
+                    {
+                        'Name': 'InstanceId',
+                        'Value': 'i-078f69c8c9c0097d6'
+                    },
+                ],
+                'StorageResolution': 60,
+                'Unit': 'Count'
+            },
+        ]
+    )
+    print(response)
+
+def health_check():
+    response = elb.describe_target_health(TargetGroupArn=config.TARGET_GROUP_ARN)
+    return response['TargetHealthDescriptions']
+
+def get_serving_instances():
+    response = health_check()
+    inservice_instances_id = set()
+    for instance in response:
+        if instance['TargetHealth']['State'] == 'healthy':
+            inservice_instances_id.add(instance['Target']['Id'])
+    return inservice_instances_id, len(inservice_instances_id)
+
 def random_destroy_worker():
     instances, num_running_workers = get_running_instances()
 
     if num_running_workers == 0:
         return None
-    num_running_workers -=1;
+    num_running_workers -= 1
     instance = random.sample(set(instances), 1)
     response = elb.deregister_targets(
         TargetGroupArn=config.TARGET_GROUP_ARN,
@@ -70,8 +110,83 @@ def random_destroy_worker():
     instance[0].terminate()
     return instance[0]
 
+
 def get_running_instances():
     instances = ec2.instances.filter(
         Filters=[{'Name': 'instance-state-name', 'Values': ['running']},
                  {'Name': 'tag:Name', 'Values': ['worker']}])
     return instances, len(set(instances))
+
+
+def delete_s3_data():
+    bucket = s3.Bucket('odwa')
+    bucket.objects.delete()
+
+
+def delete_rds_data():
+    con = pymysql.connect(config.DB_ENDPOINT, config.DB_MASTER,
+                          config.DB_PASSWORD, config.DB_NAME)
+
+    with con:
+        cur = con.cursor()
+        cur.execute("DELETE FROM users")
+        cur.execute("DELETE FROM photos")
+
+
+def get_cpu_utilization(id):
+    cpu = cw.get_metric_statistics(
+        Period=1*60,
+        StartTime=datetime.utcnow() - timedelta(seconds=30*60),
+        EndTime=datetime.utcnow() - timedelta(seconds=0),
+        MetricName='CPUUtilization',
+        Namespace='AWS/EC2',
+        Statistics=['Average'],
+        Dimensions=[{'Name': 'InstanceId', 'Value': id}]
+    )
+    cpu_stats = []
+    for point in cpu['Datapoints']:
+        hour = point['Timestamp'].hour
+        minute = point['Timestamp'].minute
+        cpu_stats.append(["%d:%02d" % (hour, minute), point['Average']])
+    cpu_stats = sorted(cpu_stats, key=itemgetter(0))
+    labels = [
+        item[0] for item in cpu_stats
+    ]
+    values = [
+        item[1] for item in cpu_stats
+    ]
+    max_percent = 0
+    if len(cpu_stats) != 0:
+        max_percent = max(cpu_stats, key=itemgetter(1))[1]
+
+    return labels, values, max_percent
+
+
+def get_num_workers_30():
+    workers = cw.get_metric_statistics(
+        Period=1*60,
+        StartTime=datetime.utcnow() - timedelta(seconds=30*60),
+        EndTime=datetime.utcnow() - timedelta(seconds=0),
+        MetricName='numWorkers30',
+        Namespace='AWS/EC2',
+        Statistics=['Sum'],
+        Dimensions=[{'Name': 'InstanceId', 'Value': 'i-078f69c8c9c0097d6'}]
+    )
+    workers_stats = []
+    for point in workers['Datapoints']:
+        hour = point['Timestamp'].hour
+        minute = point['Timestamp'].minute
+        workers_stats.append(["%d:%02d" % (hour, minute), point['Sum']])
+    print(workers_stats)
+    workers_stats = sorted(workers_stats, key=itemgetter(0))
+    labels = [
+        item[0] for item in workers_stats
+    ]
+    values = [
+        item[1] for item in workers_stats
+    ]
+    max_percent = 0
+    if len(workers_stats) != 0:
+        max_percent = max(workers_stats, key=itemgetter(1))[1]
+
+    return labels, values, max_percent

@@ -1,14 +1,13 @@
-from sqlalchemy import MetaData
 import contextlib
-import pymysql
 from flask import Blueprint, request, session, url_for, render_template, redirect, flash
-from flask_login import login_required, current_user
 from src import ec2, cw, elb, ec2_client, s3
 import time
 from datetime import datetime, timedelta
 from operator import itemgetter
 from config import config
 from time import sleep
+from src.util import health_check, delete_rds_data, delete_s3_data, get_serving_instances, get_num_workers_30
+
 panel_blueprint = Blueprint('panel', __name__)
 '''
     control panel
@@ -23,7 +22,27 @@ def index():
 @panel_blueprint.route('/workers')
 def list_workers():
     instances = ec2.instances.filter(Filters=[{'Name': 'tag:Name', 'Values': ['worker']}])
-    return render_template('list.html', instances=instances)
+    inservice_instances_id, worker_pool_size = get_serving_instances()
+    instances_list = []
+    for instance in instances:
+        tmp_instance = {
+            "id": instance.id,
+            "public_ip_address": instance.public_ip_address,
+            "instance_type": instance.instance_type,
+            "availability_zone": instance.placement['AvailabilityZone'],
+            "state": instance.state['Name'],
+            "inservice": 'Yes' if instance.id in inservice_instances_id else 'No'
+        }
+        instances_list.append(tmp_instance)
+    labels, values, maxNumWorkers = get_num_workers_30()
+    print(labels)
+    print(values)
+    return render_template('list.html', 
+        instances=instances_list, 
+        worker_pool_size=len(inservice_instances_id),
+        workerLabels=labels,
+        workerValues=values,
+        workerMax=maxNumWorkers)
 
 
 @panel_blueprint.route('delete_data', methods=['POST'])
@@ -32,20 +51,7 @@ def delete_data():
     delete_rds_data()
     flash("All Data Deleted Successfully")
     return redirect(url_for('panel.index'))
-
-def delete_s3_data():
-    bucket = s3.Bucket('odwa')
-    bucket.objects.delete()
-
-
-def delete_rds_data():
-    con = pymysql.connect(config.DB_ENDPOINT, config.DB_MASTER,
-                          config.DB_PASSWORD, config.DB_NAME)
-    
-    with con:
-        cur = con.cursor()
-        cur.execute("DELETE FROM users")
-        cur.execute("DELETE FROM photos")
+ 
 
 @panel_blueprint.route('/autoscaling', methods=['GET'])
 def goto_autoscaling():

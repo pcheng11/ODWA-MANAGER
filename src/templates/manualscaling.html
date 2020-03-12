@@ -10,8 +10,12 @@
         </form>
     </div>
     <div style="display: flex; justify-content: center; padding-top: 100px;">
-        <div style="display: flex; flex-direction: column; justify-content: center;">
+        <div style="display: flex; flex-direction: column;  align-items: center; padding: 20px">
             <h3>WORKER POOL SIZE: {{ num_workers }}</h3>
+            <p class="text-warning">(number of currently running instances serving the user-app)</p>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; padding: 20px">
+            <h3>RUNNING INSTANCES: {{ num_instances }}</h3>
             <p class="text-warning">(number of currently running instances)</p>
         </div>
 

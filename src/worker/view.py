@@ -4,13 +4,14 @@ from src import ec2, cw
 from datetime import datetime, timedelta
 from operator import itemgetter
 from config import config
+from src.util import get_cpu_utilization
 
 worker_blueprint = Blueprint('worker', __name__)
 
 @worker_blueprint.route('/<id>', methods=['GET'])
 def worker_view(id):
     instance = ec2.Instance(id)
-    CPUlabels, CPUvalues, CPUmax = _get_cpu_utilization(id)
+    CPUlabels, CPUvalues, CPUmax = get_cpu_utilization(id)
     HTTPlabels, HTTPvalues, HTTPmax = _get_http_rate(id)
     return render_template('detail.html', title='Instance Info', 
         CPUlabels=CPUlabels, 
@@ -64,30 +65,3 @@ def _get_http_rate(id):
     return labels, values, max_count
 
 
-def _get_cpu_utilization(id):
-    cpu = cw.get_metric_statistics(
-        Period=1*60,
-        StartTime=datetime.utcnow() - timedelta(seconds=30*60),
-        EndTime=datetime.utcnow() - timedelta(seconds=0),
-        MetricName='CPUUtilization',
-        Namespace='AWS/EC2',
-        Statistics=['Average'],
-        Dimensions=[{'Name': 'InstanceId', 'Value': id}]
-    )
-    cpu_stats = []
-    for point in cpu['Datapoints']:
-        hour = point['Timestamp'].hour
-        minute = point['Timestamp'].minute
-        cpu_stats.append(["%d:%02d" % (hour, minute), point['Average']])
-    cpu_stats = sorted(cpu_stats, key=itemgetter(0))
-    labels = [
-        item[0] for item in cpu_stats
-    ]
-    values = [
-        item[1] for item in cpu_stats
-    ]
-    max_percent = 0
-    if len(cpu_stats) != 0:
-        max_percent = max(cpu_stats, key=itemgetter(1))[1]
-
-    return labels, values, max_percent
