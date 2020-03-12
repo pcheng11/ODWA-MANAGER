@@ -29,7 +29,7 @@
             </thead>
             {% for instance in instances %}
             {% if instance['state'] != 'terminated' %}
-                {% if instance['inservice']== 'Yes' %}
+                {% if instance['inservice']== 'Yes' and instance['state'] == 'running' %}
                 <tr class="table-success">
                     {% else %}
                 <tr>
