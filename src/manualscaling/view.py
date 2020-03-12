@@ -14,7 +14,7 @@ def index():
 
 @manualscaling_blueprint.route('/create_worker', methods=['POST'])
 def create_worker():
-    celery_create_worker.apply_async()
+    celery_create_worker()
     sleep(1)
     flash("A new instance has been created successfully", "success")
     return redirect(url_for('manualscaling.index'))

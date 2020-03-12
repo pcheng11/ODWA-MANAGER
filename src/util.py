@@ -8,7 +8,6 @@ import random
 from datetime import timedelta, datetime
 import celery
 
-@celery.task
 def celery_create_worker():
     startup_script = """#cloud-config
 runcmd:
