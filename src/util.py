@@ -34,12 +34,17 @@ runcmd:
     )[0]
 
     print('----instance created!')
+    register_instance_to_elb.apply_async(args=[instance.id])
+
+
+@celery.task
+def register_instance_to_elb(id):
     waiter = ec2_client.get_waiter('instance_running')
-    waiter.wait(InstanceIds=[instance.id])
+    waiter.wait(InstanceIds=[id])
 
     IAMresponse = ec2_client.associate_iam_instance_profile(
         IamInstanceProfile=config.IAM_INSTANCE_PROFILE,
-        InstanceId=instance.id
+        InstanceId=id
     )
     print(IAMresponse)
 
@@ -47,7 +52,7 @@ runcmd:
         TargetGroupArn=config.TARGET_GROUP_ARN,
         Targets=[
             {
-                'Id': instance.id,
+                'Id': id,
                 'Port': 5000,
             }
         ],
