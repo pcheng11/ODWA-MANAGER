@@ -4,7 +4,7 @@
     <div style="display:flex; flex-direction:row; justify-content: space-between;" >
     <h2>Workers</h2>
         <h3 class="text-success">Worker Pool Size: {{worker_pool_size}} </h3>
-        <div>
+        <div style="display:flex; flex-direction:row; justify-content: space-between;">
             <form action="{{url_for('panel.list_workers')}}" method='get'>
                 <button type="submit" class="btn btn-info">REFRESH</button>
             </form>
