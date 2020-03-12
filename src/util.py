@@ -17,7 +17,9 @@ runcmd:
  - sudo apt-get install uwsgi-plugin-python3
  - sudo apt-get install python3-pip
  - sudo pip3 install -r requirements.txt
- - uwsgi uwsgi.ini --plugin python3 --uid ubuntu --binary-path /home/ubuntu/.local/bin/uwsgi --logto mylog.log
+ - sudo pip3 install redis
+ - sudo pip3 install celery
+ - uwsgi uwsgi.ini --plugin python3 --uid ubuntu --binary-path /home/ubuntu/.local/bin/uwsgi --logto mylog.log & celery worker -A run.celery --loglevel=info --beat
 """
     instance = ec2.create_instances(
         ImageId=config.AMI,
