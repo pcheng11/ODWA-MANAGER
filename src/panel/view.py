@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from operator import itemgetter
 from config import config
 from time import sleep
-from src.util import delete_rds_data, delete_s3_data, get_serving_instances, get_num_workers_30
+from src.util import delete_rds_data, delete_s3_data, get_serving_instances, get_num_workers_30, get_avg_cpu_utilization
 
 panel_blueprint = Blueprint('panel', __name__)
 '''
@@ -17,7 +17,8 @@ panel_blueprint = Blueprint('panel', __name__)
 @panel_blueprint.route('/', methods=['GET'])
 def index():
     _, num_serving_instance = get_serving_instances()
-    return render_template('panel.html', num_serving_instance=num_serving_instance)
+    avg_cpu_util = get_avg_cpu_utilization()
+    return render_template('panel.html', num_serving_instance=num_serving_instance, avg_cpu_util=avg_cpu_util)
 
 
 @panel_blueprint.route('/workers', methods=['GET'])

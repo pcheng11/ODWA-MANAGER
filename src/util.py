@@ -80,7 +80,7 @@ def record_serving_instances():
 
 
 @periodic_task(run_every=timedelta(seconds=60))
-def get_average_cpu_utilization():
+def auto_check_avg_cpu_utilization():
     """
         Only Get The Instances SERVING THE APP, NOT JUST RUNNNING
     """
@@ -122,7 +122,18 @@ def get_average_cpu_utilization():
     else:
         print('auto config is off')
             
+def get_avg_cpu_utilization():
+    cpu_stats_list = []
+    inservice_instances_id, num_inservice_instances = get_serving_instances()
+    if len(inservice_instances_id) == 0:
+        return
+    for instance_id in inservice_instances_id:
+        cpu_stats, _ = _get_cpu_stats(instance_id, 2)
+        cpu_stats_list.append(np.mean(cpu_stats))
+    avg_cpu_util = np.mean(cpu_stats_list)
+    return avg_cpu_util
 
+    
 def get_serving_instances():
     response = _health_check()
     inservice_instances_id = set()
