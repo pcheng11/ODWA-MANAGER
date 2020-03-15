@@ -1,17 +1,16 @@
-from flask import Blueprint, request, session, url_for, render_template, redirect
-from flask_login import login_required, current_user
-from src import ec2, cw
+from flask import Blueprint, request, url_for, render_template, redirect
+from src import ec2, cw, elb
 from datetime import datetime, timedelta
 from operator import itemgetter
 from config import config
-from src.util import get_cpu_utilization
+from src.util import get_cpu_utilization, destroy_worker
 
 worker_blueprint = Blueprint('worker', __name__)
 
 @worker_blueprint.route('/<id>', methods=['GET'])
 def worker_view(id):
     instance = ec2.Instance(id)
-    CPUlabels, CPUvalues, CPUmax = get_cpu_utilization(id)
+    CPUlabels, CPUvalues, CPUmax = get_cpu_utilization(id, 30)
     HTTPlabels, HTTPvalues, HTTPmax = _get_http_rate(id)
     return render_template('detail.html', title='Instance Info', 
         CPUlabels=CPUlabels, 
@@ -26,7 +25,7 @@ def worker_view(id):
 
 @worker_blueprint.route('/delete/<id>', methods=['POST'])
 def delete_worker(id):
-    ec2.instances.filter(InstanceIds=[id]).terminate()
+    destroy_worker(id)
     return redirect(url_for('panel.list_workers'))
 
 
@@ -46,11 +45,6 @@ def _get_http_rate(id):
         minute = point['Timestamp'].minute
         http_stats.append(["%d:%02d" % (hour, minute), point['Sum']])
     http_stats = sorted(http_stats, key=itemgetter(0))
-    print(http_stats)
-    print(datetime.utcnow().hour)
-    print(datetime.utcnow().minute)
-    # figure out a way list past 30 minutes of day time
-    print(datetime.utcnow() - timedelta(seconds=30*60))
     labels = [
         item[0] for item in http_stats
     ]

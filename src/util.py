@@ -1,24 +1,19 @@
-from src import ec2, elb, celery, ec2_client, s3, cw
+from src import ec2, elb, celery, ec2_client, s3, cw, app
 from operator import itemgetter
 from config import config
 from time import sleep
+import numpy as np
 import pymysql
 from celery.task import periodic_task
 import random
+import math
 from datetime import timedelta, datetime
 import celery
+from config import config
+from src.model import AutoScalingConfig
 
 def celery_create_worker():
-    startup_script = """#cloud-config
-runcmd:
- - cd /home/ubuntu/ODWA
- - sudo apt-get update
- - sudo apt-get install -y uwsgi
- - sudo apt-get install uwsgi-plugin-python3
- - sudo apt-get install python3-pip
- - sudo pip3 install -r requirements.txt
- - uwsgi uwsgi.ini --plugin python3 --uid ubuntu --binary-path /home/ubuntu/.local/bin/uwsgi --logto mylog.log
-"""
+    startup_script = config.STARTUP_SCRIPT
     instance = ec2.create_instances(
         ImageId=config.AMI,
         MinCount=1,
@@ -59,21 +54,17 @@ def register_instance_to_elb(id):
     print(ELBresponse)
 
 
-@periodic_task(run_every=timedelta(seconds=10))
+@periodic_task(run_every=timedelta(seconds=60))
 def record_serving_instances():
-    response = health_check()
-    inservice_instances_id = set()
-    for instance in response:
-        if instance['TargetHealth']['State'] == 'healthy':
-            inservice_instances_id.add(instance['Target']['Id'])
-
+    inservice_instances_id, num_inserivce_instances = get_serving_instances()
+    
     response = cw.put_metric_data(
         Namespace='AWS/EC2',
         MetricData=[
             {
                 'MetricName': 'numWorkers30',
                 'Timestamp': datetime.now(),
-                'Value': len(inservice_instances_id),
+                'Value': num_inserivce_instances,
                 'Dimensions': [
                     {
                         'Name': 'InstanceId',
@@ -87,37 +78,74 @@ def record_serving_instances():
     )
     print('HEALTHY INSTANCES: ' + str(len(inservice_instances_id)))
 
-def health_check():
-    response = elb.describe_target_health(TargetGroupArn=config.TARGET_GROUP_ARN)
-    return response['TargetHealthDescriptions']
+
+@periodic_task(run_every=timedelta(seconds=60))
+def get_average_cpu_utilization():
+    """
+        Only Get The Instances SERVING THE APP, NOT JUST RUNNNING
+    """
+    cpu_stats_list = []
+    inservice_instances_id, num_inservice_instances = get_serving_instances()
+    if len(inservice_instances_id) == 0:
+        return
+    for instance_id in inservice_instances_id:
+        cpu_stats, _ = _get_cpu_stats(instance_id, 2)
+        cpu_stats_list.append(np.mean(cpu_stats))
+    avg_cpu_util = np.mean(cpu_stats_list)
+
+    with app.app_context():
+        autoScalingConfig = AutoScalingConfig.query.first()
+        print(autoScalingConfig)
+    if not autoScalingConfig:
+        return
+
+    if autoScalingConfig.isOn and not has_pending_instances():
+        print("auto scaling on, no pending instances")
+        # avg util > expand_threshold
+        if avg_cpu_util > autoScalingConfig.expand_threshold:
+            to_create = int(math.ceil((autoScalingConfig.expand_ratio - 1) * num_inservice_instances))
+            if to_create + num_inservice_instances > 10:
+                to_create = max(10 - num_inservice_instances, 0)
+                print("max number of workers reached! only creating {} additional workers".format(
+                    to_create))
+            print("CPU expand threshold: {} reached ---- creating {} new instances --- expand ratio: {}".format(
+                autoScalingConfig.expand_threshold, to_create, autoScalingConfig.expand_ratio))
+            for i in range(to_create):
+                celery_create_worker()
+
+        if avg_cpu_util < autoScalingConfig.shrink_ratio:
+            to_destroy = int(autoScalingConfig.shrink_ratio * num_inservice_instances)
+            if to_destroy > 0:
+                print("CPU shrink threshold: {} reached ---- destorying {} instances --- shrink ratio: {}".format(
+                    autoScalingConfig.shrink_threshold, to_destroy, autoScalingConfig.shrink_ratio))
+                random_destroy_worker(to_destroy)
+    else:
+        print('auto config is off')
+            
 
 def get_serving_instances():
-    response = health_check()
+    response = _health_check()
     inservice_instances_id = set()
     for instance in response:
         if instance['TargetHealth']['State'] == 'healthy':
             inservice_instances_id.add(instance['Target']['Id'])
     return inservice_instances_id, len(inservice_instances_id)
 
-def random_destroy_worker():
-    instances, num_running_workers = get_running_instances()
+def random_destroy_worker(to_destroy):
+    print("destroying worker!")
+    workers_id, num_running_workers = get_serving_instances()
 
     if num_running_workers == 0:
-        return None
-    num_running_workers -= 1
-    instance = random.sample(set(instances), 1)
-    response = elb.deregister_targets(
-        TargetGroupArn=config.TARGET_GROUP_ARN,
-        Targets=[
-            {
-                'Id': instance[0].id,
-                'Port': 5000,
-            },
-        ]
-    )
-    print(response)
-    instance[0].terminate()
-    return instance[0]
+        return False
+    else:
+        workers_to_destroy_id = random.sample(workers_id, to_destroy)
+        for worker_id in workers_to_destroy_id:
+            destroy_worker(worker_id)
+
+def destroy_worker(id):
+    _degreister_from_elb(id)
+    instance = list(ec2.instances.filter(InstanceIds=[id]))[0]
+    instance.terminate()
 
 
 def get_running_instances():
@@ -126,6 +154,13 @@ def get_running_instances():
                  {'Name': 'tag:Name', 'Values': ['worker']}])
     return instances, len(set(instances))
 
+def has_pending_instances():
+    instances = list(ec2.instances.filter(
+        Filters=[{'Name': 'instance-state-name', 'Values': ['pending']},
+                 {'Name': 'tag:Name', 'Values': ['worker']}]))
+    if len(instances) == 0:
+        return False
+    return True
 
 def delete_s3_data():
     bucket = s3.Bucket('odwa')
@@ -142,31 +177,17 @@ def delete_rds_data():
         cur.execute("DELETE FROM photos")
 
 
-def get_cpu_utilization(id):
-    cpu = cw.get_metric_statistics(
-        Period=1*60,
-        StartTime=datetime.utcnow() - timedelta(seconds=30*60),
-        EndTime=datetime.utcnow() - timedelta(seconds=0),
-        MetricName='CPUUtilization',
-        Namespace='AWS/EC2',
-        Statistics=['Average'],
-        Dimensions=[{'Name': 'InstanceId', 'Value': id}]
-    )
-    cpu_stats = []
-    for point in cpu['Datapoints']:
-        hour = point['Timestamp'].hour
-        minute = point['Timestamp'].minute
-        cpu_stats.append(["%d:%02d" % (hour, minute), point['Average']])
-    cpu_stats = sorted(cpu_stats, key=itemgetter(0))
+def get_cpu_utilization(id, minutes):
+    _, cpu_stats_and_label = _get_cpu_stats(id, minutes)
     labels = [
-        item[0] for item in cpu_stats
+        item[0] for item in cpu_stats_and_label
     ]
     values = [
-        item[1] for item in cpu_stats
+        item[1] for item in cpu_stats_and_label
     ]
     max_percent = 0
-    if len(cpu_stats) != 0:
-        max_percent = max(cpu_stats, key=itemgetter(1))[1]
+    if len(cpu_stats_and_label) != 0:
+        max_percent = max(cpu_stats_and_label, key=itemgetter(1))[1]
 
     return labels, values, max_percent
 
@@ -198,3 +219,41 @@ def get_num_workers_30():
         max_percent = max(workers_stats, key=itemgetter(1))[1]
 
     return labels, values, max_percent
+
+
+def _get_cpu_stats(id, minutes):
+    cpu = cw.get_metric_statistics(
+        Period=1*60,
+        StartTime=datetime.utcnow() - timedelta(seconds=minutes*60),
+        EndTime=datetime.utcnow() - timedelta(seconds=0),
+        MetricName='CPUUtilization',
+        Namespace='AWS/EC2',
+        Statistics=['Average'],
+        Dimensions=[{'Name': 'InstanceId', 'Value': id}]
+    )
+    cpu_stats_and_label = []
+    cpu_stats = []
+    for point in cpu['Datapoints']:
+        hour = point['Timestamp'].hour
+        minute = point['Timestamp'].minute
+        cpu_stats.append(point['Average'])
+        cpu_stats_and_label.append(["%d:%02d" % (hour, minute), point['Average']])
+    cpu_stats_and_label = sorted(cpu_stats_and_label, key=itemgetter(0))
+    return cpu_stats, cpu_stats_and_label
+
+
+def _health_check():
+    response = elb.describe_target_health(
+        TargetGroupArn=config.TARGET_GROUP_ARN)
+    return response['TargetHealthDescriptions']
+
+def _degreister_from_elb(id):
+    elb.deregister_targets(
+        TargetGroupArn=config.TARGET_GROUP_ARN,
+        Targets=[
+            {
+                'Id': id,
+                'Port': 5000,
+            },
+        ]
+    )

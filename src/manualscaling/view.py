@@ -1,6 +1,8 @@
 from flask import Blueprint, url_for, redirect, render_template, flash
 from time import sleep
+from src import db
 from src.util import celery_create_worker, random_destroy_worker, get_running_instances, get_serving_instances
+from src.model import AutoScalingConfig
 
 manualscaling_blueprint = Blueprint('manualscaling', __name__)
 '''
@@ -10,22 +12,32 @@ manualscaling_blueprint = Blueprint('manualscaling', __name__)
 def index():
     _, num_instances = get_running_instances()
     _, num_workers = get_serving_instances()
-    return render_template('manualscaling.html', num_workers=num_workers, num_instances=num_instances)
+    autoScaleOn = False
+    config = AutoScalingConfig.query.first()
+    if config and config.isOn:
+        autoScaleOn = True
+    return render_template('manualscaling.html', num_workers=num_workers, num_instances=num_instances, autoScaleOn=autoScaleOn)
 
 @manualscaling_blueprint.route('/create_worker', methods=['POST'])
 def create_worker():
     celery_create_worker()
-    sleep(1)
     flash("A new instance has been created successfully", "success")
     return redirect(url_for('manualscaling.index'))
 
 
 @manualscaling_blueprint.route('/destroy_worker', methods=['POST'])
 def destroy_worker():
-    instance = random_destroy_worker()
-    if instance == None:
+    isDeleted = random_destroy_worker(1)
+    if isDeleted == False:
         flash("No available running workers!", "danger")
     else:
-        flash("instance: " + instance.id +
-              " has been deleted successfully", "success")
+        flash("an instance has been deleted successfully", "success")
+    return redirect(url_for('manualscaling.index'))
+
+
+@manualscaling_blueprint.route('/turn_on', methods=['POST'])
+def turn_on():
+    config = AutoScalingConfig.query.first()
+    config.isOn = False
+    db.session.commit()
     return redirect(url_for('manualscaling.index'))

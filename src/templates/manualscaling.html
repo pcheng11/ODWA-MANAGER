@@ -21,14 +21,26 @@
 
     </div>
     <div style="display: flex; flex-direction:column; justify-content: center; height: 50%">
-        <div style="display: flex; flex-direction:row; justify-content: space-evenly; padding: 10px;">
-            <form action="{{url_for('manualscaling.create_worker')}}" method='post'>
-                <button type="submit" class="btn btn-lg btn-outline-primary">CREATE A WORKER</button>
-            </form>
-            <form action="{{url_for('manualscaling.destroy_worker')}}" method='post'>
-                <button type="submit" class="btn btn-lg btn-outline-danger">DESTROY A WORKER</button>
-            </form>
+        <div style="display: flex; flex-direction:row; justify-content: space-around; padding: 50px;">
+            {% if autoScaleOn %}
+                    <button type="submit" class="btn btn-lg disabled btn-primary">CREATE A WORKER</button>
+                    <div style="display:flex; flex-direction: column; align-items: center">
+                        <form action="{{url_for('manualscaling.turn_on')}}" method='post'>
+                            <button type="submit" class="btn btn-lg btn-outline-primary">TURN ON MANUAL SCALING</button>
+                        </form>
+                        <p class="text-warning">By applying manual scaling, auto scaling will be turned off</p>
+                    </div>
+                    <button type="submit" class="btn btn-lg disabled btn-primary">DESTROY A WORKER</button>
+            {% else %}
+                <form action="{{url_for('manualscaling.create_worker')}}" method='post'>
+                    <button type="submit" class="btn btn-lg  btn-success">CREATE A WORKER</button>
+                </form>
+                <form action="{{url_for('manualscaling.destroy_worker')}}" method='post'>
+                    <button type="submit" class="btn btn-lg  btn-danger">DESTROY A WORKER</button>
+                </form>
+            {% endif %}
         </div>
+
         <div id="message" style="padding: 100px">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}

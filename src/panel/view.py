@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from operator import itemgetter
 from config import config
 from time import sleep
-from src.util import health_check, delete_rds_data, delete_s3_data, get_serving_instances, get_num_workers_30
+from src.util import delete_rds_data, delete_s3_data, get_serving_instances, get_num_workers_30
 
 panel_blueprint = Blueprint('panel', __name__)
 '''
@@ -14,12 +14,13 @@ panel_blueprint = Blueprint('panel', __name__)
 '''
 
 
-@panel_blueprint.route('/')
+@panel_blueprint.route('/', methods=['GET'])
 def index():
-    return render_template('panel.html')
+    _, num_serving_instance = get_serving_instances()
+    return render_template('panel.html', num_serving_instance=num_serving_instance)
 
 
-@panel_blueprint.route('/workers')
+@panel_blueprint.route('/workers', methods=['GET'])
 def list_workers():
     instances = ec2.instances.filter(Filters=[{'Name': 'tag:Name', 'Values': ['worker']}])
     inservice_instances_id, worker_pool_size = get_serving_instances()
