@@ -101,8 +101,8 @@ def auto_check_avg_cpu_utilization():
 
     if autoScalingConfig.isOn and not has_pending_instances():
         print("auto scaling on, no pending instances")
-        _, num_running_instances = get_running_instances()
-        if num_running_instances >= 9:
+        _, num_running_pending_shutting_instances = get_running_pending_shutting_instances()
+        if num_running_pending_shutting_instances >= 8:
             print('number of instances created reachs limit !')
             return
 
