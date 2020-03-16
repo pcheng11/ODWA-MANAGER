@@ -8,7 +8,7 @@ from celery.task import periodic_task
 import random
 import math
 from datetime import timedelta, datetime
-import celery
+from celery import Celery
 from config import config
 from src.model import AutoScalingConfig
 
@@ -101,6 +101,11 @@ def auto_check_avg_cpu_utilization():
 
     if autoScalingConfig.isOn and not has_pending_instances():
         print("auto scaling on, no pending instances")
+        _, num_all_instances = get_all_instances()
+        if num_all_instances >= 9:
+            print('number of instances created reachs limit !')
+            return
+
         # avg util > expand_threshold
         if avg_cpu_util > autoScalingConfig.expand_threshold:
             to_create = int(math.ceil((autoScalingConfig.expand_ratio - 1) * num_inservice_instances))
@@ -133,7 +138,7 @@ def get_avg_cpu_utilization():
     avg_cpu_util = np.mean(cpu_stats_list)
     return avg_cpu_util
 
-    
+
 def get_serving_instances():
     response = _health_check()
     inservice_instances_id = set()
@@ -158,6 +163,10 @@ def destroy_worker(id):
     instance = list(ec2.instances.filter(InstanceIds=[id]))[0]
     instance.terminate()
 
+def get_all_instances():
+    instances = ec2.instances.filter(
+    Filters=[{'Name': 'tag:Name', 'Values': ['worker']}])
+    return instances, len(set(instances))
 
 def get_running_instances():
     instances = ec2.instances.filter(

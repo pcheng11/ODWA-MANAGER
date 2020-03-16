@@ -1,7 +1,7 @@
 from flask import Blueprint, url_for, redirect, render_template, flash
 from time import sleep
 from src import db
-from src.util import celery_create_worker, random_destroy_worker, get_running_instances, get_serving_instances
+from src.util import celery_create_worker, random_destroy_worker, get_running_instances, get_serving_instances, get_all_instances
 from src.model import AutoScalingConfig
 
 manualscaling_blueprint = Blueprint('manualscaling', __name__)
@@ -20,8 +20,12 @@ def index():
 
 @manualscaling_blueprint.route('/create_worker', methods=['POST'])
 def create_worker():
-    celery_create_worker()
-    flash("A new instance has been created successfully", "success")
+    _, num_all_instances = get_all_instances()
+    if num_all_instances >= 9:
+        flash("Number of instances reaches maximum limit! (10 instances allowed)", "danger")
+    else:
+        celery_create_worker()
+        flash("A new instance has been created successfully", "success")
     return redirect(url_for('manualscaling.index'))
 
 
