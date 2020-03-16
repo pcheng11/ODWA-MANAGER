@@ -8,27 +8,12 @@ from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 celery = Celery(app.name, broker=config.CELERY_BROKER_URL)
-ec2 = boto3.resource('ec2', aws_access_key_id=config.AWS_ACCESS_KEY_ID,
-                     aws_secret_access_key=config.AWS_SECRET_ACCESS_KEY,
-                     region_name='us-east-1',
-                     aws_session_token=config.AWS_SESSION_TOKEN)
-ec2_client = boto3.client('ec2', aws_access_key_id=config.AWS_ACCESS_KEY_ID,
-                          aws_secret_access_key=config.AWS_SECRET_ACCESS_KEY,
-                          region_name='us-east-1',
-                          aws_session_token=config.AWS_SESSION_TOKEN)
-cw = boto3.client('cloudwatch',  aws_access_key_id=config.AWS_ACCESS_KEY_ID,
-                  aws_secret_access_key=config.AWS_SECRET_ACCESS_KEY,
-                  region_name='us-east-1',
-                  aws_session_token=config.AWS_SESSION_TOKEN)
-elb = boto3.client('elbv2', aws_access_key_id=config.AWS_ACCESS_KEY_ID,
-                   aws_secret_access_key=config.AWS_SECRET_ACCESS_KEY,
-                   region_name='us-east-1',
-                   aws_session_token=config.AWS_SESSION_TOKEN)
+ec2 = boto3.resource('ec2', region_name='us-east-1')
+ec2_client = boto3.client('ec2', region_name='us-east-1')
+cw = boto3.client('cloudwatch', region_name='us-east-1')
+elb = boto3.client('elbv2', region_name='us-east-1')
 
-s3 = boto3.resource('s3', aws_access_key_id=config.AWS_ACCESS_KEY_ID,
-                    aws_secret_access_key=config.AWS_SECRET_ACCESS_KEY,
-                    region_name='us-east-1',
-                    aws_session_token=config.AWS_SESSION_TOKEN)
+s3 = boto3.resource('s3', region_name='us-east-1')
 db = SQLAlchemy()
 
 
