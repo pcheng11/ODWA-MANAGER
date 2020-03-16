@@ -20,8 +20,8 @@ def index():
 
 @manualscaling_blueprint.route('/create_worker', methods=['POST'])
 def create_worker():
-    _, num_all_instances = get_all_instances()
-    if num_all_instances >= 9:
+    _, num_running_instances = get_running_instances()
+    if num_running_instances >= 9:
         flash("Number of instances reaches maximum limit! (10 instances allowed)", "danger")
     else:
         celery_create_worker()
