@@ -168,9 +168,17 @@ def get_all_instances():
     Filters=[{'Name': 'tag:Name', 'Values': ['worker']}])
     return instances, len(set(instances))
 
+
 def get_running_instances():
     instances = ec2.instances.filter(
         Filters=[{'Name': 'instance-state-name', 'Values': ['running']},
+                 {'Name': 'tag:Name', 'Values': ['worker']}])
+    return instances, len(set(instances))
+
+
+def get_running_pending_shutting_instances():
+    instances = ec2.instances.filter(
+        Filters=[{'Name': 'instance-state-name', 'Values': ['running', 'pending', 'shutting-down']},
                  {'Name': 'tag:Name', 'Values': ['worker']}])
     return instances, len(set(instances))
 
