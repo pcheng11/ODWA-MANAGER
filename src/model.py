@@ -16,4 +16,4 @@ class AutoScalingConfig(db.Model):
         self.expand_threshold = expand_threshold
 
     def __repr__(self):
-        return 'Config: <{}, {}, {}, {}>'.format(self.shrink_ratio, self.expand_ratio, self.shrink_threshold, self.expand_threshold)
+        return 'Config: <shrink ratio: {}, expand ratio: {}, shrink threshold: {}, expand threshold: {}>'.format(self.shrink_ratio, self.expand_ratio, self.shrink_threshold, self.expand_threshold)

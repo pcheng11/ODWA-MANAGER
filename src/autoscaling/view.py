@@ -15,7 +15,9 @@ autoscaling_blueprint = Blueprint('autoscaling', __name__)
 
 @autoscaling_blueprint.route('/', methods=['GET'])
 def index():
-    return render_template('autoscaling.html')
+    autoScalingConfig = AutoScalingConfig.query.first()
+    print(autoScalingConfig)
+    return render_template('autoscaling.html', autoScalingConfig=autoScalingConfig)
 
 @autoscaling_blueprint.route('/apply', methods=['POST'])
 def apply():

@@ -9,9 +9,36 @@
     </div>
     <fieldset>
         <div style="display: flex; flex-direction:column; align-items: center; padding: 80px;">
+            <h4>Current Auto Scaling Configuration</h4>
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">CPU Expand Threshold</th>
+                        <th scope="col">CPU Expand Rate</th>
+                        <th scope="col">CPU Shrink Threshold</th>
+                        <th scope="col">CPU Shrink Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="table-warning">
+                        {% if autoScalingConfig %}
+                            <td>{{ autoScalingConfig.expand_threshold }}</td>
+                            <td>{{ autoScalingConfig.expand_ratio }} </td>
+                            <td>{{ autoScalingConfig.shrink_threshold }} </td>
+                            <td>{{ autoScalingConfig.shrink_ratio }} </td>
+                        {% else %}
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                        {% endif %}
+                        
+                    </tr>
+                </tbody>
+            </table>
             <form action="{{url_for('autoscaling.apply')}}" method='post'>
                 <div class="form-group"
-                    style="display: flex; flex-direction:column; justify-content: space-evenly; padding: 80px;">
+                    style="display: flex; flex-direction:column; justify-content: space-evenly; padding: 60px;">
                     CPU threshold for growing the worker pool
                     <select class="custom-select" name="expand-threshold">
                         <option selected="" value="0.8">80%</option>
