@@ -20,6 +20,14 @@
                 <canvas id="workerchart" width="600" height="300"></canvas>
             </div>
         </div>
+        <div style="display:flex; flex-direction:row; justify-content: space-between;">
+            <form action="{{url_for('panel.list_workers')}}" method='get'>
+                <button type="submit" class="btn btn-info">REFRESH</button>
+            </form>
+            <form action="{{url_for('worker.destroy_all')}}" method='post'>
+                <button type="submit" class="btn btn-primary">DESTROY ALL</button>
+            </form>
+        </div>
         <table class="table table-hover">
             <thead>
                 <tr>
@@ -57,10 +65,10 @@
                     </td>
                     <td>
                         {% if instance['state'] == 'shutting-down' %}
-                        <button type="submit" class="btn btn-sm btn-primary disabled">Delete</button>
+                        <button type="submit" class="btn btn-sm btn-primary disabled">Destroy</button>
                         {% else %}
-                        <form action="{{url_for('worker.delete_worker',id=instance.id)}}" method='post'>
-                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        <form action="{{url_for('worker.destroy_worker',id=instance.id)}}" method='post'>
+                            <button type="submit" class="btn btn-sm btn-danger">Destroy</button>
                         </form>
                         {% endif %}
                     </td>

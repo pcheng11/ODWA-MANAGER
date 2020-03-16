@@ -37,8 +37,6 @@ def list_workers():
         }
         instances_list.append(tmp_instance)
     labels, values, maxNumWorkers = get_num_workers_30()
-    print(labels)
-    print(values)
     return render_template('list.html', 
         instances=instances_list, 
         worker_pool_size=len(inservice_instances_id),

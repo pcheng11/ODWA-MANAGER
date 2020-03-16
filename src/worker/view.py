@@ -3,7 +3,7 @@ from src import ec2, cw, elb
 from datetime import datetime, timedelta
 from operator import itemgetter
 from config import config
-from src.util import get_cpu_utilization, destroy_worker
+from src.util import get_cpu_utilization, destroy_a_worker, deregister_from_elb
 
 worker_blueprint = Blueprint('worker', __name__)
 
@@ -24,8 +24,18 @@ def worker_view(id):
 
 
 @worker_blueprint.route('/delete/<id>', methods=['POST'])
-def delete_worker(id):
-    destroy_worker(id)
+def destroy_worker(id):
+    destroy_a_worker(id)
+    return redirect(url_for('panel.list_workers'))
+
+
+@worker_blueprint.route('/delete/all', methods=['POST'])
+def destroy_all():
+    instances = ec2.instances.filter(
+        Filters=[{'Name': 'tag:Name', 'Values': ['worker']}])
+    for instance in instances:
+        deregister_from_elb(instance.id)
+        destroy_a_worker(id)
     return redirect(url_for('panel.list_workers'))
 
 

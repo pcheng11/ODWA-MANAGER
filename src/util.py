@@ -156,10 +156,10 @@ def random_destroy_worker(to_destroy):
     else:
         workers_to_destroy_id = random.sample(workers_id, to_destroy)
         for worker_id in workers_to_destroy_id:
-            destroy_worker(worker_id)
+            destroy_a_worker(worker_id)
 
-def destroy_worker(id):
-    _degreister_from_elb(id)
+def destroy_a_worker(id):
+    deregister_from_elb(id)
     instance = list(ec2.instances.filter(InstanceIds=[id]))[0]
     instance.terminate()
 
@@ -267,7 +267,7 @@ def _health_check():
         TargetGroupArn=config.TARGET_GROUP_ARN)
     return response['TargetHealthDescriptions']
 
-def _degreister_from_elb(id):
+def deregister_from_elb(id):
     elb.deregister_targets(
         TargetGroupArn=config.TARGET_GROUP_ARN,
         Targets=[
