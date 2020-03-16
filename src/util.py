@@ -159,7 +159,7 @@ def random_destroy_worker(to_destroy):
             destroy_a_worker(worker_id)
 
 def destroy_a_worker(id):
-    deregister_from_elb(id)
+    _deregister_from_elb(id)
     instance = list(ec2.instances.filter(InstanceIds=[id]))[0]
     instance.terminate()
 
@@ -267,7 +267,8 @@ def _health_check():
         TargetGroupArn=config.TARGET_GROUP_ARN)
     return response['TargetHealthDescriptions']
 
-def deregister_from_elb(id):
+
+def _deregister_from_elb(id):
     elb.deregister_targets(
         TargetGroupArn=config.TARGET_GROUP_ARN,
         Targets=[
