@@ -18,7 +18,7 @@ panel_blueprint = Blueprint('panel', __name__)
 def index():
     _, num_serving_instance = get_serving_instances()
     avg_cpu_util = get_avg_cpu_utilization()
-    return render_template('panel.html', num_serving_instance=num_serving_instance, avg_cpu_util=avg_cpu_util)
+    return render_template('static/panel.html', num_serving_instance=num_serving_instance, avg_cpu_util=avg_cpu_util)
 
 
 @panel_blueprint.route('/workers', methods=['GET'])
