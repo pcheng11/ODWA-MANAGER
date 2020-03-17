@@ -27,7 +27,7 @@ def celery_create_worker():
         Monitoring={'Enabled': True}
     )[0]
 
-    print('----instance created!')
+    print('new instance created!')
     register_instance_to_elb.apply_async(args=[instance.id])
 
 
@@ -40,7 +40,6 @@ def register_instance_to_elb(id):
         IamInstanceProfile=config.IAM_INSTANCE_PROFILE,
         InstanceId=id
     )
-    print(IAMresponse)
 
     ELBresponse = elb.register_targets(
         TargetGroupArn=config.TARGET_GROUP_ARN,
@@ -51,7 +50,7 @@ def register_instance_to_elb(id):
             }
         ],
     )
-    print(ELBresponse)
+    print('instances registered to elb!')
 
 
 @periodic_task(run_every=timedelta(seconds=60))
@@ -76,7 +75,7 @@ def record_serving_instances():
             },
         ]
     )
-    print('HEALTHY INSTANCES: ' + str(len(inservice_instances_id)))
+    print('number of healthy instances: ' + str(len(inservice_instances_id)))
 
 
 @periodic_task(run_every=timedelta(seconds=60))
@@ -85,11 +84,14 @@ def auto_check_avg_cpu_utilization():
         Only Get The Instances SERVING THE APP, NOT JUST RUNNNING
     """
     cpu_stats_list = []
-    inservice_instances_id, num_inservice_instances = get_serving_instances()
+    inservice_instances_id, num_workers = get_serving_instances()
     if len(inservice_instances_id) == 0:
         return
+
     for instance_id in inservice_instances_id:
         cpu_stats, _ = _get_cpu_stats(instance_id, 2)
+        if len(cpu_stats) == 0:
+            return
         cpu_stats_list.append(np.mean(cpu_stats))
     avg_cpu_util = np.mean(cpu_stats_list)
 
@@ -101,16 +103,16 @@ def auto_check_avg_cpu_utilization():
 
     if autoScalingConfig.isOn and not has_pending_instances():
         print("auto scaling on, no pending instances")
-        _, num_running_pending_shutting_instances = get_running_pending_shutting_instances()
-        if num_running_pending_shutting_instances >= 8:
+        _, non_terminated_instances = get_non_terminated_instances()
+        if non_terminated_instances >= 8:
             print('number of instances created reachs limit !')
             return
 
         # avg util > expand_threshold
         if avg_cpu_util > autoScalingConfig.expand_threshold:
-            to_create = int(math.ceil((autoScalingConfig.expand_ratio - 1) * num_inservice_instances))
-            if to_create + num_inservice_instances >= 9:
-                to_create = max(9 - num_inservice_instances, 0)
+            to_create = int(math.ceil((autoScalingConfig.expand_ratio - 1) * num_workers))
+            if to_create + non_terminated_instances >= 9:
+                to_create = max(9 - non_terminated_instances, 0)
                 print("max number of workers reached! only creating {} additional workers".format(
                     to_create))
             print("CPU expand threshold: {} reached ---- creating {} new instances --- expand ratio: {}".format(
@@ -119,17 +121,21 @@ def auto_check_avg_cpu_utilization():
                 celery_create_worker()
 
         if avg_cpu_util < autoScalingConfig.shrink_ratio:
-            to_destroy = int(autoScalingConfig.shrink_ratio * num_inservice_instances)
+            to_destroy = int(autoScalingConfig.shrink_ratio * num_workers)
             if to_destroy > 0:
                 print("CPU shrink threshold: {} reached ---- destorying {} instances --- shrink ratio: {}".format(
                     autoScalingConfig.shrink_threshold, to_destroy, autoScalingConfig.shrink_ratio))
                 random_destroy_worker(to_destroy)
+
+    elif has_pending_instances():
+        print('there are pending instances')
     else:
         print('auto config is off')
-            
+
+
 def get_avg_cpu_utilization():
     cpu_stats_list = []
-    inservice_instances_id, num_inservice_instances = get_serving_instances()
+    inservice_instances_id, num_workers = get_serving_instances()
     if len(inservice_instances_id) == 0:
         return
     for instance_id in inservice_instances_id:
@@ -138,14 +144,6 @@ def get_avg_cpu_utilization():
     avg_cpu_util = np.mean(cpu_stats_list)
     return avg_cpu_util
 
-
-def get_serving_instances():
-    response = _health_check()
-    inservice_instances_id = set()
-    for instance in response:
-        if instance['TargetHealth']['State'] == 'healthy':
-            inservice_instances_id.add(instance['Target']['Id'])
-    return inservice_instances_id, len(inservice_instances_id)
 
 def random_destroy_worker(to_destroy):
     print("destroying worker!")
@@ -163,6 +161,7 @@ def destroy_a_worker(id):
     instance = list(ec2.instances.filter(InstanceIds=[id]))[0]
     instance.terminate()
 
+
 def get_all_instances():
     instances = ec2.instances.filter(
     Filters=[{'Name': 'tag:Name', 'Values': ['worker']}])
@@ -176,11 +175,12 @@ def get_running_instances():
     return instances, len(set(instances))
 
 
-def get_running_pending_shutting_instances():
+def get_non_terminated_instances():
     instances = ec2.instances.filter(
         Filters=[{'Name': 'instance-state-name', 'Values': ['running', 'pending', 'shutting-down']},
                  {'Name': 'tag:Name', 'Values': ['worker']}])
     return instances, len(set(instances))
+
 
 def has_pending_instances():
     instances = list(ec2.instances.filter(
@@ -189,6 +189,16 @@ def has_pending_instances():
     if len(instances) == 0:
         return False
     return True
+
+
+def get_serving_instances():
+    response = _health_check()
+    inservice_instances_id = set()
+    for instance in response:
+        if instance['TargetHealth']['State'] == 'healthy':
+            inservice_instances_id.add(instance['Target']['Id'])
+    return inservice_instances_id, len(inservice_instances_id)
+
 
 def delete_s3_data():
     bucket = s3.Bucket('odwa')
