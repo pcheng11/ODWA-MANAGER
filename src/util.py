@@ -172,7 +172,7 @@ def get_avg_cpu_utilization_2():
         return
     for instance_id in inservice_instances_id:
         cpu_stats = _get_single_instance_cpu_util(instance_id, 2)
-        print(str(instance_id) + ": " + cpu_stats)
+        print(str(instance_id) + ": " + str(cpu_stats))
         cpu_stats_list.append(np.mean(cpu_stats))
     avg_cpu_util = np.mean(cpu_stats_list)
     return avg_cpu_util
