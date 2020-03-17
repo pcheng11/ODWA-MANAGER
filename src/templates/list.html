@@ -16,6 +16,12 @@
                 <canvas id="workerchart" width="600" height="300"></canvas>
             </div>
         </div>
+        <div class="card border-primary">
+            <div class="card-header">WORKER AVG CPU IN LAST 30 MINUTES</div>
+            <div class="card-body" style="display:flex; justify-content:center;">
+                <canvas id="avgcpuchart" width="600" height="300"></canvas>
+            </div>
+        </div>
         <div style="margin:15px">
             <div style="display:flex; flex-direction:row; justify-content: space-between;">
                 <form action="{{url_for('panel.list_workers')}}" method='get'>
@@ -120,6 +126,45 @@
         max = {{ workerMax }} + 1
         // draw bar chart
         var LineChartDemo = new Chart(WorkerChart).Line(WorkerData, {
+            scaleOverride: true,
+            scaleSteps: 1,
+            scaleStepWidth: max,
+            scaleStartValue: 0,
+            scaleShowVerticalLines: true,
+            scaleShowGridLines: true,
+            barShowStroke: true,
+            scaleShowLabels: true,
+            bezierCurve: false,
+        });
+
+        var cpuData = {
+            labels: [
+                    {% for item in cpuLabels %}
+                        "{{ item }}",
+                    {% endfor %}
+            ],
+
+            datasets: [{
+                fillColor: "rgba(151,187,205,0.2)",
+                strokeColor: "rgba(151,187,205,1)",
+                pointColor: "rgba(151,187,205,1)",
+                pointStrokeColor: "#fff",
+                pointHighlightFill: "#fff",
+                pointHighlightStroke: "rgba(151,187,205,1)",
+                bezierCurve: false,
+                data: [
+                    {% for item in cpuValues %}
+                        {{ item }},
+                    {% endfor %}]
+            }]
+        }
+
+        // get bar chart canvas
+        var cpuChart = document.getElementById("avgcpuchart").getContext("2d");
+
+        max = {{ cpuMax }} + 1
+        // draw bar chart
+        var LineChartDemo = new Chart(cpuChart).Line(cpuData, {
             scaleOverride: true,
             scaleSteps: 1,
             scaleStepWidth: max,

@@ -3,14 +3,14 @@ from src import ec2, cw, elb
 from datetime import datetime, timedelta
 from operator import itemgetter
 from config import config
-from src.util import get_cpu_utilization, destroy_a_worker
+from src.util import get_cpu_utilization_30, destroy_a_worker
 
 worker_blueprint = Blueprint('worker', __name__)
 
 @worker_blueprint.route('/<id>', methods=['GET'])
 def worker_view(id):
     instance = ec2.Instance(id)
-    CPUlabels, CPUvalues, CPUmax = get_cpu_utilization(id, 30)
+    CPUlabels, CPUvalues, CPUmax = get_cpu_utilization_30(id)
     HTTPlabels, HTTPvalues, HTTPmax = _get_http_rate(id)
     return render_template('detail.html', title='Instance Info', 
         CPUlabels=CPUlabels, 
