@@ -111,7 +111,7 @@ def auto_check_avg_cpu_utilization():
         # avg util > expand_threshold
         if avg_cpu_util > autoScalingConfig.expand_threshold:
             to_create = int(math.ceil((autoScalingConfig.expand_ratio - 1) * num_workers))
-            if to_create + non_terminated_instances >= 9:
+            if to_create + non_terminated_instances >= 8:
                 to_create = max(9 - non_terminated_instances, 0)
                 print("max number of workers reached! only creating {} additional workers".format(
                     to_create))
@@ -120,12 +120,14 @@ def auto_check_avg_cpu_utilization():
             for i in range(to_create):
                 celery_create_worker()
 
-        if avg_cpu_util < autoScalingConfig.shrink_ratio:
+        elif avg_cpu_util < autoScalingConfig.shrink_ratio:
             to_destroy = int(autoScalingConfig.shrink_ratio * num_workers)
             if to_destroy > 0:
                 print("CPU shrink threshold: {} reached ---- destorying {} instances --- shrink ratio: {}".format(
                     autoScalingConfig.shrink_threshold, to_destroy, autoScalingConfig.shrink_ratio))
                 random_destroy_worker(to_destroy)
+        else:
+            print("CPU utilization within range")
 
     elif has_pending_instances():
         print('there are pending instances')
