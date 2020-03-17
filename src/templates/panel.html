@@ -27,11 +27,7 @@
         {% endif %}
     </div>
     <div style="margin-top: 15px">
-        {% if num_serving_instance != 0 %}
         <h5>Average CPU UTILIZATION OF WORKERS (last 2 minutes): {{ avg_cpu_util }}</h5>
-        {% else %}
-        <h5>Average CPU UTILIZATION OF WORKERS (last 2 minutes): -- </h5>
-        {% endif %}
     </div>
     <div style="display: flex; flex-direction:column; justify-content: center; padding: 50px">
         <div class="jumbotron">

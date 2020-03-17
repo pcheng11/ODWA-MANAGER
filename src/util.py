@@ -83,9 +83,10 @@ def record_serving_instances_avg_cpu_util():
     if len(inservice_instances_id) != 0:
         for instance_id in inservice_instances_id:
             cpu_stats = _get_single_instance_cpu_util(instance_id, 2)
-            cpu_stats_list.append(np.mean(cpu_stats))
-        print('AVG CPU UTIL: {}'.format(cpu_stats_list))
-        avg_cpu_util = np.mean(cpu_stats_list)
+            if len(cpu_stats) != 0:
+                cpu_stats_list.append(np.mean(cpu_stats))
+        if len(cpu_stats_list) != 0:
+            avg_cpu_util = np.mean(cpu_stats_list)
 
     response = cw.put_metric_data(
         Namespace='AWS/EC2',
@@ -173,9 +174,12 @@ def get_avg_cpu_utilization_2():
     for instance_id in inservice_instances_id:
         cpu_stats = _get_single_instance_cpu_util(instance_id, 2)
         print(str(instance_id) + ": " + str(cpu_stats))
-        cpu_stats_list.append(np.mean(cpu_stats))
-    avg_cpu_util = np.mean(cpu_stats_list)
-    return avg_cpu_util
+        if len(cpu_stats) != 0:
+            cpu_stats_list.append(np.mean(cpu_stats))
+    if len(cpu_stats_list) != 0:
+        avg_cpu_util = np.mean(cpu_stats_list)
+        return avg_cpu_util
+    return 0
 
 
 def random_destroy_worker(to_destroy):
