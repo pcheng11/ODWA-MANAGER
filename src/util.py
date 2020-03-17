@@ -112,7 +112,7 @@ def auto_check_avg_cpu_utilization():
         if avg_cpu_util > autoScalingConfig.expand_threshold:
             to_create = int(math.ceil((autoScalingConfig.expand_ratio - 1) * num_workers))
             if to_create + non_terminated_instances >= 8:
-                to_create = max(9 - non_terminated_instances, 0)
+                to_create = max(8 - non_terminated_instances, 0)
                 print("max number of workers reached! only creating {} additional workers".format(
                     to_create))
             print("CPU expand threshold: {} reached ---- creating {} new instances --- expand ratio: {}".format(
