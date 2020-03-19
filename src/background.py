@@ -13,7 +13,7 @@ from src.cpu import get_single_instance_cpu_util
 from src.worker import celery_create_worker, random_destroy_worker
 
 
-@periodic_task(run_every=timedelta(seconds=60))
+@periodic_task(run_every=timedelta(seconds=10))
 def record_serving_instances_avg_cpu_util():
     inservice_instances_id, num_inserivce_instances = get_serving_instances()
 
