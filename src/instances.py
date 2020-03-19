@@ -2,7 +2,6 @@ from src import ec2, cw
 from datetime import timedelta, datetime
 from src.model import AutoScalingConfig
 import src.loadbalancer as Loadbalancer
-import src.util as Util
 
 
 def get_all_instances():
@@ -41,17 +40,3 @@ def get_serving_instances():
         if instance['TargetHealth']['State'] == 'healthy':
             inservice_instances_id.add(instance['Target']['Id'])
     return inservice_instances_id, len(inservice_instances_id)
-
-
-def get_num_workers_30():
-    workers = cw.get_metric_statistics(
-        Period=1*60,
-        StartTime=datetime.utcnow() - timedelta(seconds=30*60),
-        EndTime=datetime.utcnow() - timedelta(seconds=0),
-        MetricName='numWorkers30',
-        Namespace='AWS/EC2',
-        Statistics=['Average'],
-        Dimensions=[{'Name': 'InstanceId', 'Value': 'i-078f69c8c9c0097d6'}]
-    )
-
-    return Util.return_label_values(workers)

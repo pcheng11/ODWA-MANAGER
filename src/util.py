@@ -1,49 +1,11 @@
 from config import config
 from datetime import timedelta, datetime
 from operator import itemgetter
-from src import ec2, s3, cw
-import numpy as np
+from src import s3, cw
 import pymysql
 import random
-import src.instances as Instance
-import src.loadbalancer as Loadbalancer
-
-
-def celery_create_worker():
-    startup_script = config.STARTUP_SCRIPT
-    instance = ec2.create_instances(
-        ImageId=config.AMI,
-        MinCount=1,
-        MaxCount=1,
-        InstanceType='t2.small',
-        UserData=startup_script,
-        KeyName='odwa',
-        SecurityGroupIds=config.SECURITY_GROUP_IDS,
-        TagSpecifications=[{'ResourceType': 'instance',
-                            'Tags': [{'Key': 'Name', 'Value': 'worker'}]}],
-        Monitoring={'Enabled': True}
-    )[0]
-
-    print('new instance created!')
-    Loadbalancer.register_instance_to_elb.apply_async(args=[instance.id])
-
-
-def random_destroy_worker(to_destroy):
-    print("destroying worker!")
-    workers_id, num_running_workers = Instance.get_serving_instances()
-
-    if num_running_workers == 0:
-        return False
-    else:
-        workers_to_destroy_id = random.sample(workers_id, to_destroy)
-        for worker_id in workers_to_destroy_id:
-            destroy_a_worker(worker_id)
-
-
-def destroy_a_worker(id):
-    Loadbalancer.deregister_from_elb(id)
-    instance = list(ec2.instances.filter(InstanceIds=[id]))[0]
-    instance.terminate()
+from src.instances import get_serving_instances
+from src.loadbalancer import register_instance_to_elb, deregister_from_elb
 
 
 def delete_s3_data():

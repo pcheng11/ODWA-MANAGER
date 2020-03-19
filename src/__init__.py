@@ -1,4 +1,4 @@
-__author__ = 'victor cheng'
+__author__ = 'victor Cheng, Pengyu Chen, Fang Zhou'
 
 import boto3
 from flask import Flask
@@ -23,12 +23,12 @@ def create_app():
     db.init_app(app)
 
     with app.app_context():
-        from .worker.view import worker_blueprint
+        from .detail.view import detail_blueprint
         from .panel.view import panel_blueprint
         from .autoscaling.view import autoscaling_blueprint
         from .manualscaling.view import manualscaling_blueprint
         # register blueprints
-        app.register_blueprint(worker_blueprint, url_prefix='/worker')
+        app.register_blueprint(detail_blueprint, url_prefix='/detail')
         app.register_blueprint(autoscaling_blueprint,
                                url_prefix='/autoscaling')
         app.register_blueprint(panel_blueprint, url_prefix='/panel')

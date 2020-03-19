@@ -1,18 +1,19 @@
 from flask import Blueprint, url_for, render_template, redirect
 from src import ec2, cw
 from operator import itemgetter
+from datetime import timedelta, datetime
 from config import config
-import src.util as Util
-import src.cpu as Cpu
+from src.worker import get_http_rate, destroy_a_worker
+from src.cpu import get_cpu_utilization_30
 
 
-worker_blueprint = Blueprint('worker', __name__)
+detail_blueprint = Blueprint('detail', __name__)
 
-@worker_blueprint.route('/<id>', methods=['GET'])
+@detail_blueprint.route('/<id>', methods=['GET'])
 def worker_view(id):
     instance = ec2.Instance(id)
-    CPUlabels, CPUvalues, CPUmax = Cpu.get_cpu_utilization_30(id)
-    HTTPlabels, HTTPvalues, HTTPmax = Util.get_http_rate(id)
+    CPUlabels, CPUvalues, CPUmax = get_cpu_utilization_30(id)
+    HTTPlabels, HTTPvalues, HTTPmax = get_http_rate(id)
     return render_template('detail.html', title='Instance Info', 
         CPUlabels=CPUlabels, 
         CPUvalues=CPUvalues, 
@@ -24,18 +25,18 @@ def worker_view(id):
 
 
 
-@worker_blueprint.route('/delete/<id>', methods=['POST'])
+@detail_blueprint.route('/delete/<id>', methods=['POST'])
 def destroy_worker(id):
-    Util.destroy_a_worker(id)
+    destroy_a_worker(id)
     return redirect(url_for('panel.list_workers'))
 
 
-@worker_blueprint.route('/delete/all', methods=['POST'])
+@detail_blueprint.route('/delete/all', methods=['POST'])
 def destroy_all():
     instances = ec2.instances.filter(
         Filters=[{'Name': 'tag:Name', 'Values': ['worker']}])
     for instance in instances:
-        Util.destroy_a_worker(instance.id)
+        destroy_a_worker(instance.id)
     return redirect(url_for('panel.list_workers'))
 
 

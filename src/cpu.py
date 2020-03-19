@@ -2,9 +2,9 @@ from src import cw
 from operator import itemgetter
 from datetime import timedelta, datetime
 from src.model import AutoScalingConfig
-import src.instances as Instance
+from src.instances import get_serving_instances
+from src.util import return_label_values
 import numpy as np
-import src.util as Util
 
 
 def get_cpu_utilization_30(id):
@@ -17,7 +17,7 @@ def get_cpu_utilization_30(id):
         Statistics=['Average'],
         Dimensions=[{'Name': 'InstanceId', 'Value': id}]
     )
-    return Util.return_label_values(cpu)
+    return return_label_values(cpu)
 
 
 def get_avg_cpu_utilization_30():
@@ -30,9 +30,7 @@ def get_avg_cpu_utilization_30():
         Statistics=['Average'],
         Dimensions=[{'Name': 'InstanceId', 'Value': 'i-078f69c8c9c0097d6'}]
     )
-    return Util.return_label_values(avg_cpu)
-
-
+    return return_label_values(avg_cpu)
 
 
 def get_single_instance_cpu_util(id, minutes):
@@ -53,11 +51,11 @@ def get_single_instance_cpu_util(id, minutes):
 
 def get_avg_cpu_utilization_2():
     cpu_stats_list = []
-    inservice_instances_id, num_workers = Instance.get_serving_instances()
+    inservice_instances_id, num_workers = get_serving_instances()
     if len(inservice_instances_id) == 0:
         return
     for instance_id in inservice_instances_id:
-        cpu_stats = Instance.get_single_instance_cpu_util(instance_id, 2)
+        cpu_stats = get_single_instance_cpu_util(instance_id, 2)
         print(str(instance_id) + ": " + str(cpu_stats))
         if len(cpu_stats) != 0:
             cpu_stats_list.append(np.mean(cpu_stats))
