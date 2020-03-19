@@ -55,7 +55,7 @@ def get_num_workers_30():
         Dimensions=[{'Name': 'InstanceId', 'Value': 'i-078f69c8c9c0097d6'}]
     )
 
-    return return_label_values(workers)
+    return return_label_values(workers, 'Average')
 
 
 def get_http_rate(id):
@@ -65,8 +65,8 @@ def get_http_rate(id):
         EndTime=datetime.utcnow() - timedelta(seconds=0),
         MetricName='httpRequestRate',
         Namespace='AWS/EC2',
-        Statistics=['Average'],
+        Statistics=['Sum'],
         Dimensions=[{'Name': 'InstanceId', 'Value': id}]
     )
 
-    return return_label_values(http)
+    return return_label_values(http, 'Sum')

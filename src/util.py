@@ -23,12 +23,12 @@ def delete_rds_data():
         cur.execute("DELETE FROM photos")
     
 
-def return_label_values(stats):
+def return_label_values(stats, specification):
     storage_list = []
     for point in stats['Datapoints']:
         hour = point['Timestamp'].hour
         minute = point['Timestamp'].minute
-        storage_list.append(["%d:%02d" % (hour, minute), point['Average']])
+        storage_list.append(["%d:%02d" % (hour, minute), point[specification]])
     storage_list = sorted(storage_list, key=itemgetter(0))
     labels = [
         item[0] for item in storage_list

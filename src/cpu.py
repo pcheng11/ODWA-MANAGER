@@ -17,7 +17,7 @@ def get_cpu_utilization_30(id):
         Statistics=['Average'],
         Dimensions=[{'Name': 'InstanceId', 'Value': id}]
     )
-    return return_label_values(cpu)
+    return return_label_values(cpu, 'Average')
 
 
 def get_avg_cpu_utilization_30():
@@ -30,7 +30,7 @@ def get_avg_cpu_utilization_30():
         Statistics=['Average'],
         Dimensions=[{'Name': 'InstanceId', 'Value': 'i-078f69c8c9c0097d6'}]
     )
-    return return_label_values(avg_cpu)
+    return return_label_values(avg_cpu, 'Average')
 
 
 def get_single_instance_cpu_util(id, minutes):
