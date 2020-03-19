@@ -1,5 +1,5 @@
 from src import app
-from src import celery
+from src import background_task
 
 if __name__ == "__main__":
     # app = create_app(debug=True)
