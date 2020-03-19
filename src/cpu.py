@@ -62,4 +62,4 @@ def get_avg_cpu_utilization_2():
     if len(cpu_stats_list) != 0:
         avg_cpu_util = np.mean(cpu_stats_list)
         return avg_cpu_util
-    return 0
+    return None
