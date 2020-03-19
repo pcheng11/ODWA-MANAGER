@@ -42,7 +42,7 @@ def record_serving_instances_avg_cpu_util():
 
     if num_workers != 0:
         for worker_id in workers_ids:
-            cpu_stats = get_single_instance_cpu_util(worker_id, 2)
+            cpu_stats = get_single_instance_cpu_util(worker_id, 1)
             if len(cpu_stats) != 0:
                 cpu_stats_list.append(np.mean(cpu_stats))
         if len(cpu_stats_list) != 0:
