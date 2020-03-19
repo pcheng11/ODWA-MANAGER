@@ -1,6 +1,5 @@
-from src import ec2, elb, celery, ec2_client
+from src import ec2, elb, background_task, ec2_client
 from config import config
-from celery import Celery
 from src.model import AutoScalingConfig
 
 
@@ -22,7 +21,7 @@ def deregister_from_elb(id):
     )
 
 
-@celery.task
+@background_task.task
 def register_instance_to_elb(id):
     waiter = ec2_client.get_waiter('instance_running')
     waiter.wait(InstanceIds=[id])
