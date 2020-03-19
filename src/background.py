@@ -66,7 +66,6 @@ def record_serving_instances_avg_cpu_util():
             },
         ]
     )
-    redirect(url_for('panel.index'))
 
 
 @periodic_task(run_every=timedelta(seconds=60))
