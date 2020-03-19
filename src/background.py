@@ -132,6 +132,8 @@ def all_instance_has_valid_cpu_util():
     for worker_id in workers_ids:
         cpu_stats = get_single_instance_cpu_util(worker_id, 1)
         # if this instance does not have utilization, that means it has no service
+        print(worker_id)
+        print(cpu_stats)
         if len(cpu_stats) == 0 or np.mean(cpu_stats) > 1:
             return False, 0
         cpu_stats_list.append(np.mean(cpu_stats))
