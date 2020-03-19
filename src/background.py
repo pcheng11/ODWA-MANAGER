@@ -1,10 +1,10 @@
-from celery import Celery
-from celery.task import periodic_task
 from config import config
 from datetime import timedelta, datetime
 
 from src.model import AutoScalingConfig
 from src import celery, cw, app
+from celery import Celery
+from celery.task import periodic_task
 
 import numpy as np
 import random
@@ -12,6 +12,7 @@ import math
 import src.instances as Instance
 import src.cpu as Cpu
 import src.util as Util
+
 
 @periodic_task(run_every=timedelta(seconds=60))
 def record_serving_instances_avg_cpu_util():
