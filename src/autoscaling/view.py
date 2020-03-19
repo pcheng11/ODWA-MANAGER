@@ -1,17 +1,11 @@
-from flask import Blueprint, request, session, url_for, render_template, redirect, flash
-from flask_login import login_required, current_user
+from flask import Blueprint, request, url_for, render_template, redirect, flash
 from src import ec2, cw, elb, celery, ec2_client, db
 from src.model import AutoScalingConfig
-import time
-from datetime import datetime, timedelta
-from operator import itemgetter
-from config import config
 
 autoscaling_blueprint = Blueprint('autoscaling', __name__)
 '''
     auto scaling panel
 '''
-
 
 @autoscaling_blueprint.route('/', methods=['GET'])
 def index():
