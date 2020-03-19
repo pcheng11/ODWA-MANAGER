@@ -1,3 +1,4 @@
+from celery import Celery
 from celery.task import periodic_task
 from config import config
 from datetime import timedelta, datetime
