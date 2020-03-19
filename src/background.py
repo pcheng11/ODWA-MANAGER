@@ -4,7 +4,7 @@ from datetime import timedelta, datetime
 from src.model import AutoScalingConfig
 from src import background_task, cw, app
 from background_task.task import periodic_task
-
+from celery import Celery
 import numpy as np
 import random
 import math
