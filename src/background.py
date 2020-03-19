@@ -9,14 +9,14 @@ from celery.task import periodic_task
 import numpy as np
 import random
 import math
-import src.instances as Instance
-import src.cpu as Cpu
-import src.util as Util
+from src.instances import get_serving_instances, get_non_terminated_instances, has_pending_instances
+from src.cpu import get_single_instance_cpu_util
+from src.worker import celery_create_worker, random_destroy_worker
 
 
 @periodic_task(run_every=timedelta(seconds=60))
 def record_serving_instances_avg_cpu_util():
-    inservice_instances_id, num_inserivce_instances = Instance.get_serving_instances()
+    inservice_instances_id, num_inserivce_instances = get_serving_instances()
 
     response = cw.put_metric_data(
         Namespace='AWS/EC2',
@@ -43,7 +43,7 @@ def record_serving_instances_avg_cpu_util():
 
     if len(inservice_instances_id) != 0:
         for instance_id in inservice_instances_id:
-            cpu_stats = Cpu.get_single_instance_cpu_util(instance_id, 2)
+            cpu_stats = get_single_instance_cpu_util(instance_id, 2)
             if len(cpu_stats) != 0:
                 cpu_stats_list.append(np.mean(cpu_stats))
         if len(cpu_stats_list) != 0:
@@ -75,12 +75,12 @@ def auto_check_avg_cpu_utilization():
         Only Get The Instances SERVING THE APP, NOT JUST RUNNNING
     """
     cpu_stats_list = []
-    inservice_instances_id, num_workers = Instance.get_serving_instances()
+    inservice_instances_id, num_workers = get_serving_instances()
     if len(inservice_instances_id) == 0:
         return
 
     for instance_id in inservice_instances_id:
-        cpu_stats = Cpu.get_single_instance_cpu_util(instance_id, 2)
+        cpu_stats = get_single_instance_cpu_util(instance_id, 2)
         # if this instance does not have utilization, that means it has no service
         if len(cpu_stats) == 0:
             return
@@ -96,8 +96,8 @@ def auto_check_avg_cpu_utilization():
     if autoScalingConfig.isOn:
         print("auto scaling on")
         # only getting the instances that are serving the app
-        _, num_workers = Instance.get_serving_instances()
-        _, non_terminated_instances = Instance.get_non_terminated_instances()
+        _, num_workers = get_serving_instances()
+        _, non_terminated_instances = get_non_terminated_instances()
 
         # avg util > expand_threshold
         if avg_cpu_util > autoScalingConfig.expand_threshold:
@@ -113,18 +113,18 @@ def auto_check_avg_cpu_utilization():
             print("CPU expand threshold: {} reached ---- creating {} new instances --- expand ratio: {}".format(
                 autoScalingConfig.expand_threshold, to_create, autoScalingConfig.expand_ratio))
             for i in range(to_create):
-                Util.celery_create_worker()
+                celery_create_worker()
 
         elif avg_cpu_util < autoScalingConfig.shrink_ratio:
             to_destroy = int(autoScalingConfig.shrink_ratio * num_workers)
             if to_destroy > 0:
                 print("CPU shrink threshold: {} reached ---- destorying {} instances --- shrink ratio: {}".format(
                     autoScalingConfig.shrink_threshold, to_destroy, autoScalingConfig.shrink_ratio))
-                Util.random_destroy_worker(to_destroy)
+                random_destroy_worker(to_destroy)
         else:
             print("CPU utilization within range")
 
-    elif Instance.has_pending_instances():
+    elif has_pending_instances():
         print('there are pending instances')
     else:
         print('auto config is off')
