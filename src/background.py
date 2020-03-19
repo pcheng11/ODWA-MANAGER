@@ -8,14 +8,14 @@ from celery import Celery
 import numpy as np
 import random
 import math
-from src.instances import get_serving_instances, get_non_terminated_instances, has_pending_instances
+from src.instances import get_serving_instances, get_non_terminated_instances, has_pending_instances, get_running_instances
 from src.cpu import get_single_instance_cpu_util
 from src.worker import celery_create_worker, random_destroy_worker
 
 
-@periodic_task(run_every=timedelta(seconds=10))
+@periodic_task(run_every=timedelta(seconds=15))
 def record_serving_instances_avg_cpu_util():
-    inservice_instances_id, num_inserivce_instances = get_serving_instances()
+    workers_ids, num_workers = get_serving_instances()
 
     response = cw.put_metric_data(
         Namespace='AWS/EC2',
@@ -23,7 +23,7 @@ def record_serving_instances_avg_cpu_util():
             {
                 'MetricName': 'numWorkers30',
                 'Timestamp': datetime.now(),
-                'Value': num_inserivce_instances,
+                'Value': num_workers,
                 'Dimensions': [
                     {
                         'Name': 'InstanceId',
@@ -35,14 +35,14 @@ def record_serving_instances_avg_cpu_util():
             },
         ]
     )
-    print('number of healthy instances: ' + str(len(inservice_instances_id)))
+    print('Number of healthy instances: ' + str(num_workers))
 
     cpu_stats_list = []
     avg_cpu_util = 0
 
-    if len(inservice_instances_id) != 0:
-        for instance_id in inservice_instances_id:
-            cpu_stats = get_single_instance_cpu_util(instance_id, 2)
+    if num_workers != 0:
+        for worker_id in workers_ids:
+            cpu_stats = get_single_instance_cpu_util(worker_id, 2)
             if len(cpu_stats) != 0:
                 cpu_stats_list.append(np.mean(cpu_stats))
         if len(cpu_stats_list) != 0:
@@ -73,18 +73,6 @@ def auto_check_avg_cpu_utilization():
     """
         Only Get The Instances SERVING THE APP, NOT JUST RUNNNING
     """
-    cpu_stats_list = []
-    inservice_instances_id, num_workers = get_serving_instances()
-    if len(inservice_instances_id) == 0:
-        return
-
-    for instance_id in inservice_instances_id:
-        cpu_stats = get_single_instance_cpu_util(instance_id, 2)
-        # if this instance does not have utilization, that means it has no service
-        if len(cpu_stats) == 0:
-            return
-        cpu_stats_list.append(np.mean(cpu_stats))
-    avg_cpu_util = np.mean(cpu_stats_list)
 
     with app.app_context():
         autoScalingConfig = AutoScalingConfig.query.first()
@@ -92,21 +80,26 @@ def auto_check_avg_cpu_utilization():
     if not autoScalingConfig:
         return
 
-    if autoScalingConfig.isOn:
+    if autoScalingConfig.isOn and not has_pending_instances():
         print("auto scaling on")
         # only getting the instances that are serving the app
         _, num_workers = get_serving_instances()
-        _, non_terminated_instances = get_non_terminated_instances()
+        _, num_running_instances = get_running_instances()
 
+        if num_workers != num_running_instances:
+            return
+        print('all the created instances in service now!')
+        _, num_non_terminated_instances = get_non_terminated_instances()
         # avg util > expand_threshold
+        avg_cpu_util = calculate_avg_util()
         if avg_cpu_util > autoScalingConfig.expand_threshold:
-            if non_terminated_instances >= 8:
+            if num_non_terminated_instances >= 8:
                 print('number of instances created reaches limit !')
                 return
             to_create = int(
                 math.ceil((autoScalingConfig.expand_ratio - 1) * num_workers))
-            if to_create + non_terminated_instances >= 8:
-                to_create = max(8 - non_terminated_instances, 0)
+            if to_create + num_non_terminated_instances >= 8:
+                to_create = max(8 - num_non_terminated_instances, 0)
                 print("max number of workers reached! only creating {} additional workers".format(
                     to_create))
             print("CPU expand threshold: {} reached ---- creating {} new instances --- expand ratio: {}".format(
@@ -127,3 +120,17 @@ def auto_check_avg_cpu_utilization():
         print('there are pending instances')
     else:
         print('auto config is off')
+
+
+def calculate_avg_util():
+    cpu_stats_list = []
+    workers_ids, num_workers = get_serving_instances()
+
+    for worker_id in workers_ids:
+        cpu_stats = get_single_instance_cpu_util(worker_id, 2)
+        # if this instance does not have utilization, that means it has no service
+        if len(cpu_stats) == 0:
+            return
+        cpu_stats_list.append(np.mean(cpu_stats))
+    avg_cpu_util = np.mean(cpu_stats_list)
+    return avg_cpu_util
