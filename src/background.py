@@ -138,7 +138,7 @@ def all_instance_has_valid_cpu_util():
             print(str(worker_id) + " has no cpu util yet")
             return False, 0
         elif np.mean(cpu_stats) > 1:
-            print(str(worker_id) + ": " + np.mean(cpu_stats))
+            print(str(worker_id) + ": " + str(np.mean(cpu_stats)))
             return True, 2
 
         cpu_stats_list.append(np.mean(cpu_stats))
