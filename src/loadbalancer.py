@@ -2,7 +2,7 @@ from src import ec2, elb, background_task, ec2_client
 from celery.task import periodic_task
 from config import config
 from src.model import AutoScalingConfig
-
+from datetime import timedelta, datetime
 
 def health_check():
     response = elb.describe_target_health(
