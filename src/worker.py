@@ -65,7 +65,7 @@ def get_http_rate(id):
         EndTime=datetime.utcnow() - timedelta(seconds=0),
         MetricName='httpRequestRate',
         Namespace='AWS/EC2',
-        Statistics=['Sum'],
+        Statistics=['Average'],
         Dimensions=[{'Name': 'InstanceId', 'Value': id}]
     )
 
