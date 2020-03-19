@@ -7,7 +7,7 @@ from celery import Celery
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-celery = Celery(app.name, broker=config.CELERY_BROKER_URL)
+background_task = Celery(app.name, broker=config.CELERY_BROKER_URL)
 ec2 = boto3.resource('ec2', region_name='us-east-1')
 ec2_client = boto3.client('ec2', region_name='us-east-1')
 cw = boto3.client('cloudwatch', region_name='us-east-1')
@@ -19,7 +19,7 @@ db = SQLAlchemy()
 
 def create_app():
     app.config.from_object('config.config')
-    celery.conf.update(app.config)
+    background_task.conf.update(app.config)
     db.init_app(app)
 
     with app.app_context():

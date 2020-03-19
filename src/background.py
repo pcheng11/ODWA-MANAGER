@@ -2,8 +2,7 @@ from config import config
 from datetime import timedelta, datetime
 
 from src.model import AutoScalingConfig
-from src import celery, cw, app
-from celery import Celery
+from src import background_task, cw, app
 from celery.task import periodic_task
 
 import numpy as np

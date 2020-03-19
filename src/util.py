@@ -21,20 +21,6 @@ def delete_rds_data():
         cur = con.cursor()
         cur.execute("DELETE FROM users")
         cur.execute("DELETE FROM photos")
-
-
-def get_http_rate(id):
-    http = cw.get_metric_statistics(
-        Period=1*60,
-        StartTime=datetime.utcnow() - timedelta(seconds=30*60),
-        EndTime=datetime.utcnow() - timedelta(seconds=0),
-        MetricName='httpRequestRate',
-        Namespace='AWS/EC2',
-        Statistics=['Sum'],
-        Dimensions=[{'Name': 'InstanceId', 'Value': id}]
-    )
-    
-    return return_label_values(http)
     
 
 def return_label_values(stats):
