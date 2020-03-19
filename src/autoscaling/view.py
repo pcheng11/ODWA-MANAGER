@@ -1,5 +1,5 @@
 from flask import Blueprint, request, url_for, render_template, redirect, flash
-from src import ec2, cw, elb, celery, ec2_client, db
+from src import ec2, cw, elb, background_task, ec2_client, db
 from src.model import AutoScalingConfig
 
 autoscaling_blueprint = Blueprint('autoscaling', __name__)
