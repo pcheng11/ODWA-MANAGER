@@ -1,6 +1,6 @@
 from config import config
 from datetime import timedelta, datetime
-
+from flask import redirect, url_for
 from src.model import AutoScalingConfig
 from src import background_task, cw, app
 from celery.task import periodic_task
@@ -66,6 +66,7 @@ def record_serving_instances_avg_cpu_util():
             },
         ]
     )
+    redirect(url_for('panel.index'))
 
 
 @periodic_task(run_every=timedelta(seconds=60))
@@ -91,7 +92,7 @@ def auto_check_avg_cpu_utilization():
         print('all the created instances in service now!')
         _, num_non_terminated_instances = get_non_terminated_instances()
         # avg util > expand_threshold
-        all_has_cpu_util, avg_cpu_util = all_instance_has_cpu_util()
+        all_has_cpu_util, avg_cpu_util = all_instance_has_valid_cpu_util()
         if not all_has_cpu_util:
             print('newly created worker has no cpu util yet, wait')
             return
@@ -110,7 +111,7 @@ def auto_check_avg_cpu_utilization():
             for i in range(to_create):
                 celery_create_worker()
 
-        elif avg_cpu_util < autoScalingConfig.shrink_ratio:
+        elif avg_cpu_util < autoScalingConfig.shrink_threshold:
             to_destroy = int(autoScalingConfig.shrink_ratio * num_workers)
             if to_destroy > 0:
                 print("CPU shrink threshold: {} reached ---- destorying {} instances --- shrink ratio: {}".format(
@@ -125,14 +126,14 @@ def auto_check_avg_cpu_utilization():
         print('auto config is off')
 
 
-def all_instance_has_cpu_util():
+def all_instance_has_valid_cpu_util():
     cpu_stats_list = []
     workers_ids, num_workers = get_serving_instances()
 
     for worker_id in workers_ids:
-        cpu_stats = get_single_instance_cpu_util(worker_id, 2)
+        cpu_stats = get_single_instance_cpu_util(worker_id, 1)
         # if this instance does not have utilization, that means it has no service
-        if len(cpu_stats) == 0:
+        if len(cpu_stats) == 0 or np.mean(cpu_stats) > 1:
             return False, 0
         cpu_stats_list.append(np.mean(cpu_stats))
     avg_cpu_util = np.mean(cpu_stats_list)
