@@ -3,8 +3,7 @@ from datetime import timedelta, datetime
 
 from src.model import AutoScalingConfig
 from src import background_task, cw, app
-from celery import Celery
-from celery.task import periodic_task
+from celery.decorators import periodic_task
 
 import numpy as np
 import random
