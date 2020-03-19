@@ -27,7 +27,7 @@
                 <form action="{{url_for('panel.list_workers')}}" method='get'>
                     <button type="submit" class="btn btn-info">REFRESH</button>
                 </form>
-                <form action="{{url_for('worker.destroy_all')}}" method='post'>
+                <form action="{{url_for('detail.destroy_all')}}" method='post'>
                     <button type="submit" class="btn btn-primary">DESTROY ALL</button>
                 </form>
             </div>
@@ -60,7 +60,7 @@
                         {% if instance['state'] == 'pending' or instance['state']== 'shutting-down'%}
                         <button type="submit" class="btn btn-sm btn-primary disabled">Detail</button>
                         {% else %}
-                        <form action="{{url_for('worker.worker_view',id=instance.id)}}" method='get'>
+                        <form action="{{url_for('detail.worker_view',id=instance.id)}}" method='get'>
                             <button type="submit" class="btn btn-sm btn-info">Detail</button>
                         </form>
                         {% endif %}
@@ -70,7 +70,7 @@
                         {% if instance['state'] == 'shutting-down' %}
                         <button type="submit" class="btn btn-sm btn-primary disabled">Destroy</button>
                         {% else %}
-                        <form action="{{url_for('worker.destroy_worker',id=instance.id)}}" method='post'>
+                        <form action="{{url_for('detail.destroy_worker',id=instance.id)}}" method='post'>
                             <button type="submit" class="btn btn-sm btn-danger">Destroy</button>
                         </form>
                         {% endif %}
