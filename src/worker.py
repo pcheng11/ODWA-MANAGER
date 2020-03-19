@@ -1,9 +1,10 @@
 from config import config
+from datetime import timedelta, datetime
 from src import ec2, cw
-import random
 from src.instances import get_serving_instances
 from src.loadbalancer import register_instance_to_elb, deregister_from_elb
 from src.util import return_label_values
+import random
 
 
 def celery_create_worker():
