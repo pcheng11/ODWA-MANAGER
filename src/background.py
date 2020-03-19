@@ -92,8 +92,8 @@ def auto_check_avg_cpu_utilization():
         _, num_non_terminated_instances = get_non_terminated_instances()
         # avg util > expand_threshold
         all_has_cpu_util, avg_cpu_util = all_instance_has_valid_cpu_util()
-        if not all_has_cpu_util:
-            print('newly created worker has no cpu util yet, wait')
+        if not all_has_cpu_util or avg_cpu_util > 1:
+            print('newly created worker has no cpu util yet / cpu > 1, wait!')
             return
         if avg_cpu_util > autoScalingConfig.expand_threshold:
             if num_non_terminated_instances >= 8:
@@ -130,12 +130,17 @@ def all_instance_has_valid_cpu_util():
     workers_ids, num_workers = get_serving_instances()
 
     for worker_id in workers_ids:
-        cpu_stats = get_single_instance_cpu_util(worker_id, 1)
+        cpu_stats = get_single_instance_cpu_util(worker_id, 2)
         # if this instance does not have utilization, that means it has no service
         print(worker_id)
         print(cpu_stats)
-        if len(cpu_stats) == 0 or np.mean(cpu_stats) > 1:
+        if len(cpu_stats) == 0:
+            print(str(worker_id) + " has no cpu util yet")
             return False, 0
+        elif np.mean(cpu_stats) > 1:
+            print(str(worker_id) + ": " + np.mean(cpu_stats))
+            return True, 2
+
         cpu_stats_list.append(np.mean(cpu_stats))
     avg_cpu_util = np.mean(cpu_stats_list)
     return True, avg_cpu_util
