@@ -1,5 +1,5 @@
 from src import ec2, elb, background_task, ec2_client
-from background_task.task import periodic_task
+from celery.task import periodic_task
 from config import config
 from src.model import AutoScalingConfig
 
