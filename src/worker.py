@@ -1,5 +1,5 @@
 from config import config
-from src import ec2
+from src import ec2, cw
 import random
 from src.instances import get_serving_instances
 from src.loadbalancer import register_instance_to_elb, deregister_from_elb
