@@ -31,7 +31,7 @@ def record_serving_instances_avg_cpu_util():
                     },
                 ],
                 'StorageResolution': 60,
-                'Unit': 'SampleCount'
+                'Unit': 'Count'
             },
         ]
     )
