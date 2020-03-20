@@ -55,7 +55,7 @@ def get_num_workers_30():
         Dimensions=[{'Name': 'InstanceId', 'Value': 'i-078f69c8c9c0097d6'}]
     )
 
-    return return_label_values(workers, 'Average')
+    return return_label_values(workers, 'SampleCount')
 
 
 def get_http_rate(id):

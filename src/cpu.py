@@ -33,9 +33,9 @@ def get_avg_cpu_utilization_30():
     return return_label_values(avg_cpu, 'Average')
 
 
-def get_single_instance_cpu_util(id, seconds, period):
+def get_single_instance_cpu_util(id, seconds):
     cpu = cw.get_metric_statistics(
-        Period=period,
+        Period=60,
         StartTime=datetime.utcnow() - timedelta(seconds=seconds),
         EndTime=datetime.utcnow() - timedelta(seconds=0),
         MetricName='CPUUtilization',
@@ -56,7 +56,7 @@ def get_avg_cpu_utilization_2():
     if len(inservice_instances_id) == 0:
         return
     for instance_id in inservice_instances_id:
-        cpu_stats = get_single_instance_cpu_util(instance_id, 120, 10)
+        cpu_stats = get_single_instance_cpu_util(instance_id, 120)
         print(str(instance_id) + ": " + str(cpu_stats))
         if len(cpu_stats) != 0:
             cpu_stats_list.append(np.mean(cpu_stats))
