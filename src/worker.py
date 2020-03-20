@@ -49,7 +49,7 @@ def get_num_workers_30():
         Period=1*60,
         StartTime=datetime.utcnow() - timedelta(seconds=30*60),
         EndTime=datetime.utcnow() - timedelta(seconds=0),
-        MetricName='numWorkers30minutes',
+        MetricName='num-workers',
         Namespace='AWS/EC2',
         Statistics=['SampleCount'],
         Dimensions=[{'Name': 'InstanceId', 'Value': 'i-078f69c8c9c0097d6'}]

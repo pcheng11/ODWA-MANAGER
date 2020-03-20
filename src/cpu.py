@@ -25,7 +25,7 @@ def get_avg_cpu_utilization_30():
         Period=60,
         StartTime=datetime.utcnow() - timedelta(seconds=30*60),
         EndTime=datetime.utcnow() - timedelta(seconds=0),
-        MetricName='avgCPUutilization',
+        MetricName='avg-cpu-util',
         Namespace='AWS/EC2',
         Statistics=['Average'],
         Dimensions=[{'Name': 'InstanceId', 'Value': 'i-078f69c8c9c0097d6'}]
