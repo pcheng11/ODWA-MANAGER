@@ -4,13 +4,19 @@
 <div style="height: 100%; padding: 50px">
     <div style="display: flex; flex-direction: row; justify-content: space-between">
         <h3>Manager Portal</h3>
-        {% if num_serving_instance != 0 %}
-            <form action="http://odwa-lb-1384744205.us-east-1.elb.amazonaws.com">
-                <button type="submit" class="btn btn-lg btn-info">GO TO APPLICATION</button>
-            </form>
-        {% else %}
+        <div style="display:flex; flex-direction:row; justify-content: space-between;">
+            {% if num_serving_instance != 0 %}
+                <form action="http://odwa-lb-1384744205.us-east-1.elb.amazonaws.com">
+                    <button type="submit" class="btn btn-lg btn-info">GO TO APPLICATION</button>
+                </form>
+            {% else %}
                 <button type="submit" class="btn disabled btn-lg btn-primary">GO TO APPLICATION</button>
-        {% endif %}
+            {% endif %}
+            <form action="{{url_for('panel.stop_manager')}}" method='post'>
+                <button type="submit" class="btn btn-lg btn-primary">MANUAL SCALING</button>
+            </form>
+        </div>
+        
     </div>
     {% if num_serving_instance != 0 %}
     <h5>USER-APP Status: RUNNING</h5>
@@ -57,12 +63,8 @@
             </div>
         </div>
     </div>
-
-    <div style="display: flex; flex-direction:row; justify-content: space-around; padding: 30px;">
-        <p>Load Balancer DNS: odwa-lb-1384744205.us-east-1.elb.amazonaws.com</p>
-        <form action="{{url_for('panel.stop_manager')}}" method='post'>
-            <button type="submit" class="btn btn-lg btn-danger">STOP MANAGER</button>
-        </form>
+    <p>Load Balancer DNS: odwa-lb-1384744205.us-east-1.elb.amazonaws.com</p>
+        
     </div>
     
 </div>
