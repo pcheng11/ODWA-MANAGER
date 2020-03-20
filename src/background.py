@@ -61,7 +61,7 @@ def record_serving_instances_avg_cpu_util():
                         'Value': 'i-078f69c8c9c0097d6'
                     },
                 ],
-                'StorageResolution': 1,
+                'StorageResolution': 60,
                 'Unit': 'Count'
             },
         ]

@@ -22,7 +22,7 @@ def get_cpu_utilization_30(id):
 
 def get_avg_cpu_utilization_30():
     avg_cpu = cw.get_metric_statistics(
-        Period=1,
+        Period=60,
         StartTime=datetime.utcnow() - timedelta(seconds=30*60),
         EndTime=datetime.utcnow() - timedelta(seconds=0),
         MetricName='avgCPUutilization',
