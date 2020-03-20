@@ -5,6 +5,8 @@ from flask import Flask
 from config import config
 from celery import Celery
 from flask_sqlalchemy import SQLAlchemy
+from src.worker import celery_create_worker
+
 
 app = Flask(__name__)
 background_task = Celery(app.name, broker=config.CELERY_BROKER_URL)
@@ -40,3 +42,4 @@ def create_app():
 
 
 app = create_app()
+celery_create_worker()
