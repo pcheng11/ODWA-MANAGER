@@ -65,7 +65,7 @@ def stop_manager():
         destroy_a_worker(instance.id)
     
     managers = ec2.instances.filter(
-        Filters=[{'Name': 'tag:Name', 'Values': ['manager']}]
+        Filters=[{'Name': 'tag:Name', 'Values': ['Manager']}]
     )
     for manager in managers:
         manager.stop()
