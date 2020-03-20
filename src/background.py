@@ -76,7 +76,7 @@ def auto_check_avg_cpu_utilization():
 
     with app.app_context():
         autoScalingConfig = AutoScalingConfig.query.first()
-        print(autoScalingConfig)
+        print("auto config:  " + str(autoScalingConfig))
     if not autoScalingConfig:
         return
 

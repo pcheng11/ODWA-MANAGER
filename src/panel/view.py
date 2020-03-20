@@ -3,7 +3,7 @@ from flask import Blueprint, url_for, render_template, redirect, flash
 from src import ec2
 from config import config
 from src.util import delete_s3_data, delete_rds_data
-from src.worker import get_num_workers_30
+from src.worker import get_num_workers_30, destroy_a_worker
 from src.cpu import get_avg_cpu_utilization_2, get_avg_cpu_utilization_30
 from src.instances import get_serving_instances, get_serving_instances
 
@@ -49,13 +49,27 @@ def list_workers():
                            cpuMax=cpuMax)
 
 
-@panel_blueprint.route('delete_data', methods=['POST'])
+@panel_blueprint.route('/delete_data', methods=['POST'])
 def delete_data():
     delete_s3_data()
     delete_rds_data()
     flash("All Data Deleted Successfully")
     return redirect(url_for('panel.index'))
  
+
+@panel_blueprint.route('/stop_manager', methods=['POST'])
+def stop_manager():
+    instances = ec2.instances.filter(
+        Filters=[{'Name': 'tag:Name', 'Values': ['worker']}])
+    for instance in instances:
+        destroy_a_worker(instance.id)
+    
+    managers = ec2.instances.filter(
+        Filters=[{'Name': 'tag:Name', 'Values': ['manager']}]
+    )
+    for manager in managers:
+        manager.stop()
+
 
 @panel_blueprint.route('/autoscaling', methods=['GET'])
 def goto_autoscaling():

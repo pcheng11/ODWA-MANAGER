@@ -57,6 +57,13 @@
             </div>
         </div>
     </div>
-    <p>Load Balancer DNS: odwa-lb-1384744205.us-east-1.elb.amazonaws.com</p>
+
+    <div style="display: flex; flex-direction:row; justify-content: space-evenly; padding: 30px;">
+        <p>Load Balancer DNS: odwa-lb-1384744205.us-east-1.elb.amazonaws.com</p>
+        <form action="{{url_for('panel.stop_manager')}}" method='post'>
+            <button type="submit" class="btn btn-lg btn-primary">STOP MANAGER</button>
+        </form>
+    </div>
+    
 </div>
 {% endblock %}
