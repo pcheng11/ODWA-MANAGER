@@ -39,4 +39,8 @@ def get_serving_instances():
     for instance in response:
         if instance['TargetHealth']['State'] == 'healthy':
             inservice_instances_id.add(instance['Target']['Id'])
+        if instance['TargetHealth']['State'] == 'draining' or instance['TargetHealth']['State'] == 'unhealthy':
+            print(str(instance['Target']['Id']) + " is " +
+                  instance['TargetHealth']['State'])
+            
     return inservice_instances_id, len(inservice_instances_id)
