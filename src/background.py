@@ -68,7 +68,7 @@ def record_serving_instances_avg_cpu_util():
     )
 
 
-@periodic_task(run_every=timedelta(seconds=60))
+@periodic_task(run_every=timedelta(seconds=15))
 def auto_check_avg_cpu_utilization():
     """
         Only Get The Instances SERVING THE APP, NOT JUST RUNNNING
