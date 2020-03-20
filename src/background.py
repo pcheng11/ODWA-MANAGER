@@ -13,7 +13,7 @@ from src.cpu import get_single_instance_cpu_util
 from src.worker import celery_create_worker, random_destroy_worker
 
 
-@periodic_task(run_every=timedelta(seconds=15))
+@periodic_task(run_every=timedelta(seconds=10))
 def record_serving_instances_avg_cpu_util():
     workers_ids, num_workers = get_serving_instances()
 
@@ -42,9 +42,9 @@ def record_serving_instances_avg_cpu_util():
 
     if num_workers != 0:
         for worker_id in workers_ids:
-            cpu_stats = get_single_instance_cpu_util(worker_id, 2)
+            cpu_stats = get_single_instance_cpu_util(worker_id, 10, 10)
             if len(cpu_stats) != 0:
-                cpu_stats_list.append(np.mean(cpu_stats))
+                cpu_stats_list.append(cpu_stats[0])
         if len(cpu_stats_list) != 0:
             avg_cpu_util = np.mean(cpu_stats_list)
 
@@ -61,14 +61,14 @@ def record_serving_instances_avg_cpu_util():
                         'Value': 'i-078f69c8c9c0097d6'
                     },
                 ],
-                'StorageResolution': 60,
+                'StorageResolution': 10,
                 'Unit': 'Count'
             },
         ]
     )
 
 
-@periodic_task(run_every=timedelta(seconds=15))
+@periodic_task(run_every=timedelta(seconds=10))
 def auto_check_avg_cpu_utilization():
     """
         Only Get The Instances SERVING THE APP, NOT JUST RUNNNING
@@ -130,7 +130,7 @@ def all_instance_has_valid_cpu_util():
     workers_ids, num_workers = get_serving_instances()
 
     for worker_id in workers_ids:
-        cpu_stats = get_single_instance_cpu_util(worker_id, 2)
+        cpu_stats = get_single_instance_cpu_util(worker_id, 120, 10)
         # if this instance does not have utilization, that means it has no service
         print(worker_id)
         print(cpu_stats)

@@ -33,10 +33,10 @@ def get_avg_cpu_utilization_30():
     return return_label_values(avg_cpu, 'Average')
 
 
-def get_single_instance_cpu_util(id, minutes):
+def get_single_instance_cpu_util(id, seconds, period):
     cpu = cw.get_metric_statistics(
-        Period=1*60,
-        StartTime=datetime.utcnow() - timedelta(seconds=minutes*60),
+        Period=period,
+        StartTime=datetime.utcnow() - timedelta(seconds=seconds),
         EndTime=datetime.utcnow() - timedelta(seconds=0),
         MetricName='CPUUtilization',
         Namespace='AWS/EC2',
@@ -55,11 +55,11 @@ def get_avg_cpu_utilization_2():
     if len(inservice_instances_id) == 0:
         return
     for instance_id in inservice_instances_id:
-        cpu_stats = get_single_instance_cpu_util(instance_id, 2)
+        cpu_stats = get_single_instance_cpu_util(instance_id, 120, 10)
         print(str(instance_id) + ": " + str(cpu_stats))
         if len(cpu_stats) != 0:
             cpu_stats_list.append(np.mean(cpu_stats))
     if len(cpu_stats_list) != 0:
         avg_cpu_util = np.mean(cpu_stats_list)
         return avg_cpu_util
-    return None
+    return 
