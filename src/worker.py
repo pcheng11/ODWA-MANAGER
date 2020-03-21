@@ -49,13 +49,13 @@ def get_num_workers_30():
         Period=1*60,
         StartTime=datetime.utcnow() - timedelta(seconds=30*60),
         EndTime=datetime.utcnow() - timedelta(seconds=0),
-        MetricName='num-workers',
+        MetricName='num-workers-average',
         Namespace='AWS/EC2',
-        Statistics=['SampleCount'],
+        Statistics=['Average'],
         Dimensions=[{'Name': 'InstanceId', 'Value': 'i-078f69c8c9c0097d6'}]
     )
 
-    return return_label_values(workers, 'SampleCount')
+    return return_label_values(workers, 'Average')
 
 
 def get_http_rate(id):

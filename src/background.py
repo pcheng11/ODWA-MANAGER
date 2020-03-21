@@ -21,7 +21,7 @@ def record_serving_instances_avg_cpu_util():
         Namespace='AWS/EC2',
         MetricData=[
             {
-                'MetricName': 'num-workers',
+                'MetricName': 'num-workers-average',
                 'Timestamp': datetime.now(),
                 'Value': num_workers,
                 'Dimensions': [
